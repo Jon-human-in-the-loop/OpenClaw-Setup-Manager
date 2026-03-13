@@ -22,7 +22,10 @@ build/
 npm-debug.log*
 pnpm-debug.log*
 yarn-error.log*
+.manus-logs/
 
 # Temp
 .cache/
 .turbo/
+.env.local
+.env.*.local
