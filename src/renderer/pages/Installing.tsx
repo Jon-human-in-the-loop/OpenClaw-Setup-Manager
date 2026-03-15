@@ -4,6 +4,7 @@ import { Loader2, Terminal, AlertTriangle, RefreshCw } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export function Installing(): JSX.Element {
   const {
@@ -62,6 +63,9 @@ export function Installing(): JSX.Element {
 
   return (
     <div className="flex flex-col h-full px-6 py-5">
+      <div className="flex justify-end mb-2">
+        <LanguageToggle />
+      </div>
       <div className="flex-1 flex flex-col justify-center">
         {installSuccess === false ? (
           /* Error state */
@@ -106,7 +110,7 @@ export function Installing(): JSX.Element {
                 )}
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">
-                {isInstalling ? t(language, "installing.title") : (language === "es" ? "¡Casi listo!" : "Almost done!")}
+                {isInstalling ? t(language, "installing.title") : t(language, "installing.almostDone")}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {isInstalling ? t(language, "installing.subtitle") : installMessage}

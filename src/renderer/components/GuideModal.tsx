@@ -1,6 +1,7 @@
 import { X, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
+import { t } from "@/lib/i18n";
 
 interface GuideStep {
   title: string;
@@ -86,7 +87,7 @@ export function GuideModal({ open, onClose, title, titleEn, steps }: GuideModalP
                   onClick={onClose}
                   className="w-full py-2 bg-muted text-foreground text-sm font-medium rounded-md hover:bg-muted/80 transition-colors"
                 >
-                  {language === "es" ? "Entendido" : "Got it"}
+                  {t(language, "common.understood")}
                 </button>
               </div>
             </div>

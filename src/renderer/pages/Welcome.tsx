@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
-import { ChevronRight, Check, Globe } from "lucide-react";
+import { ChevronRight, Check } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export function Welcome(): JSX.Element {
   const { goNext } = useInstallation();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
 
   const steps = [
     "welcome.steps.1",
@@ -20,23 +21,7 @@ export function Welcome(): JSX.Element {
     <div className="flex flex-col h-full overflow-y-auto">
       {/* Language Toggle */}
       <div className="flex justify-end px-6 pt-4">
-        <div className="no-drag flex items-center gap-1 bg-muted rounded-lg p-1">
-          {(["es", "en"] as const).map((lang) => (
-            <button
-              key={lang}
-              onClick={() => setLanguage(lang)}
-              className={[
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                language === lang
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              ].join(" ")}
-            >
-              <Globe size={11} />
-              {lang.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        <LanguageToggle />
       </div>
 
       {/* Hero */}
