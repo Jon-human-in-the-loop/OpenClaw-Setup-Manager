@@ -23,44 +23,6 @@ import { useInstaller } from "@/hooks/useInstaller";
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663304144987/jGPtcnubRShEmU2GfHpyLr/hero-bg-VFZMG9ZALVp74UtDhETrZA.webp";
 const MASCOT = "https://d2xsxph8kpxj0f.cloudfront.net/310519663304144987/jGPtcnubRShEmU2GfHpyLr/lobster-mascot-AZsn6Bhy6fzY46SeS3NHSy.webp";
 
-const BG_WORDS = [
-  "ACCESS_DENIED", "SYSTEM_BREACH", "OVERRIDE", "INIT_AGENT",
-  "CONNECTED", "DEPLOY_OK", "SECURE_SHELL", "KERNEL_LOAD",
-  "AI_ONLINE", "SYNC_ACTIVE", "ROOT_ACCESS", "AGENT_BOOT",
-  "FIREWALL_OK", "TOKEN_VALID", "EXEC_READY", "NODE_UP",
-  "DOCKER_RUN", "CONFIG_SET", "AUTH_PASS", "STREAM_OK",
-];
-
-function FloatingTerminalText() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden>
-      {BG_WORDS.map((word, i) => (
-        <motion.span
-          key={word}
-          className="absolute font-mono font-bold text-xs whitespace-nowrap"
-          style={{
-            left: `${(i * 13.7 + 5) % 88}%`,
-            top: `${(i * 17.3 + 3) % 88}%`,
-            color: "oklch(0.85 0.25 145 / 0.07)",
-          }}
-          animate={{
-            opacity: [0.4, 1, 0.4],
-            y: [0, -12, 0],
-          }}
-          transition={{
-            duration: 3.5 + (i % 5) * 0.8,
-            repeat: Infinity,
-            delay: i * 0.35,
-            ease: "easeInOut",
-          }}
-        >
-          {word}
-        </motion.span>
-      ))}
-    </div>
-  );
-}
-
 export default function Home() {
   const installer = useInstaller();
   const wizardRef = useRef<HTMLDivElement>(null);
@@ -155,9 +117,6 @@ export default function Home() {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
         </div>
-
-        {/* Floating terminal text */}
-        <FloatingTerminalText />
 
         {/* Scanline overlay */}
         <div className="absolute inset-0 scanline pointer-events-none" />
