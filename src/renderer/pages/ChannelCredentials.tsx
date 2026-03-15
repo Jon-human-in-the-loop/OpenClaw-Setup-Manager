@@ -5,7 +5,13 @@ import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
 import { StepIndicator } from "@/components/StepIndicator";
-import { GuideModal } from "@/components/GuideModal";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import {
+  WhatsAppGuide,
+  TelegramGuide,
+  DiscordGuide,
+  SlackGuide,
+} from "@/components/ChannelGuide";
 import {
   validateWhatsAppNumber,
   validateTelegramToken,
@@ -21,9 +27,6 @@ interface CredentialField {
   value: string;
   onChange: (v: string) => void;
   validate: (v: string) => { valid: boolean; error?: string; errorEn?: string };
-  guideTitle: string;
-  guideTitleEn: string;
-  guideSteps: { title: string; titleEn: string; description: string; descriptionEn: string; url?: string }[];
 }
 
 export function ChannelCredentials(): JSX.Element {
@@ -50,13 +53,6 @@ export function ChannelCredentials(): JSX.Element {
       value: phoneNumber,
       onChange: setPhoneNumber,
       validate: validateWhatsAppNumber,
-      guideTitle: "Guía de WhatsApp",
-      guideTitleEn: "WhatsApp Guide",
-      guideSteps: [
-        { title: "Abre Facebook Business", titleEn: "Open Facebook Business", description: "Ve a business.facebook.com y accede a tu cuenta.", descriptionEn: "Go to business.facebook.com and sign in." },
-        { title: "API de WhatsApp Business", titleEn: "WhatsApp Business API", description: "Busca 'WhatsApp Business' en el menú de productos.", descriptionEn: "Find 'WhatsApp Business' in the products menu.", url: "https://business.facebook.com/wa/manage/phone-numbers" },
-        { title: "Copia tu número", titleEn: "Copy your number", description: "Copia el número verificado en formato internacional (+521234567890).", descriptionEn: "Copy the verified number in international format (+11234567890)." },
-      ],
     },
     channels.has("telegram") && {
       channelId: "telegram",
@@ -66,13 +62,6 @@ export function ChannelCredentials(): JSX.Element {
       value: telegramToken,
       onChange: setTelegramToken,
       validate: validateTelegramToken,
-      guideTitle: "Guía de Telegram",
-      guideTitleEn: "Telegram Guide",
-      guideSteps: [
-        { title: "Abre Telegram", titleEn: "Open Telegram", description: "Busca @BotFather en Telegram.", descriptionEn: "Search for @BotFather on Telegram." },
-        { title: "Crea un bot", titleEn: "Create a bot", description: "Escribe /newbot y sigue las instrucciones.", descriptionEn: "Type /newbot and follow the instructions." },
-        { title: "Copia el token", titleEn: "Copy the token", description: "BotFather te dará un token con formato: 123456789:ABCdef...", descriptionEn: "BotFather will give you a token: 123456789:ABCdef..." },
-      ],
     },
     channels.has("discord") && {
       channelId: "discord",
@@ -82,13 +71,6 @@ export function ChannelCredentials(): JSX.Element {
       value: discordToken,
       onChange: setDiscordToken,
       validate: validateDiscordToken,
-      guideTitle: "Guía de Discord",
-      guideTitleEn: "Discord Guide",
-      guideSteps: [
-        { title: "Discord Developer Portal", titleEn: "Discord Developer Portal", description: "Ve a discord.com/developers/applications", descriptionEn: "Go to discord.com/developers/applications", url: "https://discord.com/developers/applications" },
-        { title: "Crea una nueva aplicación", titleEn: "Create a new application", description: "Click en 'New Application' y dale un nombre.", descriptionEn: "Click 'New Application' and give it a name." },
-        { title: "Crea un bot y copia el token", titleEn: "Create a bot and copy the token", description: "Ve a 'Bot' en el menú lateral → 'Reset Token' → copia el token.", descriptionEn: "Go to 'Bot' in the side menu → 'Reset Token' → copy the token." },
-      ],
     },
     channels.has("slack") && {
       channelId: "slack",
@@ -98,17 +80,8 @@ export function ChannelCredentials(): JSX.Element {
       value: slackToken,
       onChange: setSlackToken,
       validate: validateSlackToken,
-      guideTitle: "Guía de Slack",
-      guideTitleEn: "Slack Guide",
-      guideSteps: [
-        { title: "Slack API", titleEn: "Slack API", description: "Ve a api.slack.com/apps", descriptionEn: "Go to api.slack.com/apps", url: "https://api.slack.com/apps" },
-        { title: "Crea una App", titleEn: "Create an App", description: "Click 'Create New App' → 'From scratch'.", descriptionEn: "Click 'Create New App' → 'From scratch'." },
-        { title: "OAuth & Permissions → Bot Token", titleEn: "OAuth & Permissions → Bot Token", description: "Ve a OAuth & Permissions → copia el 'Bot User OAuth Token' (empieza con xoxb-).", descriptionEn: "Go to OAuth & Permissions → copy the 'Bot User OAuth Token' (starts with xoxb-)." },
-      ],
     },
   ].filter(Boolean) as CredentialField[];
-
-  const activeGuide = fields.find((f) => f.channelId === openGuide);
 
   const canContinue = fields.every((f) => {
     const val = f.value.trim();
@@ -117,8 +90,9 @@ export function ChannelCredentials(): JSX.Element {
 
   return (
     <div className="flex flex-col h-full px-6 py-5">
-      <div className="mb-4">
+      <div className="flex items-center justify-between mb-4">
         <StepIndicator />
+        <LanguageToggle />
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-4">
@@ -205,21 +179,16 @@ export function ChannelCredentials(): JSX.Element {
           disabled={!canContinue}
           className="no-drag flex items-center gap-1.5 px-5 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          {t(language, "installing.title")}
+          {t(language, "common.install")}
           <ChevronRight size={14} />
         </button>
       </div>
 
-      {/* Guide Modal */}
-      {activeGuide && (
-        <GuideModal
-          open={openGuide !== null}
-          onClose={() => setOpenGuide(null)}
-          title={activeGuide.guideTitle}
-          titleEn={activeGuide.guideTitleEn}
-          steps={activeGuide.guideSteps}
-        />
-      )}
+      {/* Dedicated channel guides */}
+      <WhatsAppGuide open={openGuide === "whatsapp"} onClose={() => setOpenGuide(null)} />
+      <TelegramGuide open={openGuide === "telegram"} onClose={() => setOpenGuide(null)} />
+      <DiscordGuide open={openGuide === "discord"} onClose={() => setOpenGuide(null)} />
+      <SlackGuide open={openGuide === "slack"} onClose={() => setOpenGuide(null)} />
     </div>
   );
 }

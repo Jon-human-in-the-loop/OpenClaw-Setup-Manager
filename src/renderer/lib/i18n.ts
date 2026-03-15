@@ -8,7 +8,7 @@ const translations = {
   // ── Common ────────────────────────────────────────────────────────────────
   "common.next": { es: "Siguiente", en: "Next" },
   "common.back": { es: "Atrás", en: "Back" },
-  "common.install": { es: "Instalar", en: "Install" },
+  "common.install": { es: "Instalar ahora", en: "Install now" },
   "common.open": { es: "Abrir", en: "Open" },
   "common.close": { es: "Cerrar", en: "Close" },
   "common.help": { es: "Ayuda", en: "Help" },
@@ -27,6 +27,17 @@ const translations = {
 
   // ── TitleBar ──────────────────────────────────────────────────────────────
   "titlebar.title": { es: "OpenClaw Easy Installer", en: "OpenClaw Easy Installer" },
+
+  // ── Agent Name ────────────────────────────────────────────────────────────
+  "agentname.title": { es: "Nombra a tu agente", en: "Name your agent" },
+  "agentname.subtitle": {
+    es: "Dale un nombre y personalidad a tu asistente. Lo podrás cambiar después.",
+    en: "Give your assistant a name and personality. You can change it later.",
+  },
+  "agentname.label": { es: "Nombre del agente", en: "Agent name" },
+  "agentname.placeholder": { es: "Ej: Clawd, Aria, Max...", en: "E.g.: Clawd, Aria, Max..." },
+  "agentname.emoji": { es: "Elige un emoji", en: "Choose an emoji" },
+  "agentname.preview": { es: "Vista previa", en: "Preview" },
 
   // ── Welcome ───────────────────────────────────────────────────────────────
   "welcome.title": { es: "Instala OpenClaw\nen 5 minutos", en: "Install OpenClaw\nin 5 minutes" },

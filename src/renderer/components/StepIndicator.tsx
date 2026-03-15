@@ -6,6 +6,7 @@ const VISIBLE_STEPS: WizardStep[] = [
   "welcome",
   "system-check",
   "setup-type",
+  "agent-name",
   "model",
   "channels",
   "installing",
@@ -16,12 +17,13 @@ const STEP_NUMBERS: Record<WizardStep, number> = {
   "welcome": 1,
   "system-check": 2,
   "setup-type": 3,
-  "model": 4,
-  "api-key": 4,
-  "channels": 5,
-  "credentials": 5,
-  "installing": 6,
-  "success": 7,
+  "agent-name": 4,
+  "model": 5,
+  "api-key": 5,
+  "channels": 6,
+  "credentials": 6,
+  "installing": 7,
+  "success": 8,
 };
 
 export function StepIndicator(): JSX.Element {

@@ -12,6 +12,7 @@ export type WizardStep =
   | "welcome"
   | "system-check"
   | "setup-type"
+  | "agent-name"
   | "model"
   | "api-key"
   | "channels"
@@ -23,6 +24,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   "welcome",
   "system-check",
   "setup-type",
+  "agent-name",
   "model",
   "api-key",
   "channels",
@@ -36,6 +38,7 @@ interface InstallationState {
   stepIndex: number;
   setupType: SetupType;
   agentName: string;
+  agentEmoji: string;
   primaryModel: string;
   fallbackModel?: string;
   apiKey: string;
@@ -59,6 +62,7 @@ interface InstallationContextValue extends InstallationState {
   goTo: (step: WizardStep) => void;
   setSetupType: (type: SetupType) => void;
   setAgentName: (name: string) => void;
+  setAgentEmoji: (emoji: string) => void;
   setPrimaryModel: (model: string) => void;
   setFallbackModel: (model: string | undefined) => void;
   setApiKey: (key: string) => void;
@@ -82,6 +86,7 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
     stepIndex: 0,
     setupType: "cloud",
     agentName: "Clawd",
+    agentEmoji: "🦞",
     primaryModel: "anthropic/claude-sonnet-4-5",
     fallbackModel: undefined,
     apiKey: "",
@@ -168,6 +173,10 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
 
   const setAgentName = useCallback((name: string) => {
     setState((prev) => ({ ...prev, agentName: name }));
+  }, []);
+
+  const setAgentEmoji = useCallback((emoji: string) => {
+    setState((prev) => ({ ...prev, agentEmoji: emoji }));
   }, []);
 
   const setPrimaryModel = useCallback((model: string) => {
@@ -258,6 +267,7 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
         goTo,
         setSetupType,
         setAgentName,
+        setAgentEmoji,
         setPrimaryModel,
         setFallbackModel,
         setApiKey,

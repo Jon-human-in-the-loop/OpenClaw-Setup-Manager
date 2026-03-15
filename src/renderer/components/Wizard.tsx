@@ -3,6 +3,7 @@ import { useInstallation } from "@/context/InstallationContext";
 import { Welcome } from "@/pages/Welcome";
 import { SystemCheck } from "@/pages/SystemCheck";
 import { SetupType } from "@/pages/SetupType";
+import { AgentName } from "@/pages/AgentName";
 import { ModelSelection } from "@/pages/ModelSelection";
 import { ApiKey } from "@/pages/ApiKey";
 import { Channels } from "@/pages/Channels";
@@ -14,6 +15,7 @@ const PAGE_COMPONENTS = {
   "welcome": Welcome,
   "system-check": SystemCheck,
   "setup-type": SetupType,
+  "agent-name": AgentName,
   "model": ModelSelection,
   "api-key": ApiKey,
   "channels": Channels,

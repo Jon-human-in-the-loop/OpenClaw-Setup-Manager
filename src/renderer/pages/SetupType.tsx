@@ -4,6 +4,7 @@ import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
 import { StepIndicator } from "@/components/StepIndicator";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import type { SetupType as SetupTypeValue } from "../../types";
 
 interface TypeOption {
@@ -48,8 +49,9 @@ export function SetupType(): JSX.Element {
 
   return (
     <div className="flex flex-col h-full px-6 py-5">
-      <div className="mb-4">
+      <div className="flex items-center justify-between mb-4">
         <StepIndicator />
+        <LanguageToggle />
       </div>
 
       <div className="flex-1 overflow-y-auto">
