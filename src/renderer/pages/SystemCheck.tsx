@@ -155,7 +155,7 @@ export function SystemCheck(): JSX.Element {
                         className="flex items-center gap-1 text-xs text-primary hover:underline ml-2"
                       >
                         <ExternalLink size={10} />
-                        {language === "es" ? "Abrir" : "Open"}
+                        {t(language, "common.openLink")}
                       </button>
                     )}
                   </div>

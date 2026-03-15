@@ -5,6 +5,7 @@ import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
 import { getModel } from "@/lib/models";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 const DASHBOARD_URL = "http://127.0.0.1:18789";
 const DOCS_URL = "https://github.com/openclaw/openclaw";
@@ -26,6 +27,9 @@ export function Success(): JSX.Element {
 
   return (
     <div className="flex flex-col h-full px-6 py-5 overflow-y-auto">
+      <div className="flex justify-end mb-2">
+        <LanguageToggle />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

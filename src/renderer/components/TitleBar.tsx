@@ -2,12 +2,6 @@ import { Minus, Square, X } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
 
-declare global {
-  interface Window {
-    api: import("../../preload/preload").Api;
-  }
-}
-
 export function TitleBar(): JSX.Element {
   const { language } = useLanguage();
   const isMac = navigator.platform.toLowerCase().includes("mac");

@@ -24,6 +24,8 @@ const translations = {
   "common.no": { es: "No", en: "No" },
   "common.getKey": { es: "Obtener clave", en: "Get key" },
   "common.guide": { es: "Ver guía", en: "View guide" },
+  "common.understood": { es: "Entendido", en: "Got it" },
+  "common.openLink": { es: "Abrir", en: "Open" },
 
   // ── TitleBar ──────────────────────────────────────────────────────────────
   "titlebar.title": { es: "OpenClaw Easy Installer", en: "OpenClaw Easy Installer" },
@@ -157,6 +159,7 @@ const translations = {
   "installing.step.config": { es: "Configurando tu agente...", en: "Configuring your agent..." },
   "installing.step.start": { es: "Iniciando servicio...", en: "Starting service..." },
   "installing.log.title": { es: "Registro de instalación", en: "Installation log" },
+  "installing.almostDone": { es: "¡Casi listo!", en: "Almost done!" },
   "installing.error.title": { es: "Error en la instalación", en: "Installation error" },
   "installing.error.retry": { es: "Reintentar", en: "Retry" },
 
