@@ -6,6 +6,7 @@ import { registerInstallHandlers } from "./handlers/install.handler";
 import { registerConfigHandlers } from "./handlers/config.handler";
 import { registerUpdateHandlers, configureAutoUpdater } from "./handlers/update.handler";
 import { registerSessionHandlers, cleanupOldSessions } from "./handlers/session.handler";
+import { registerNetworkHandlers, startNetworkMonitoring } from "./handlers/network.handler";
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -63,11 +64,15 @@ app.whenReady().then(() => {
   registerConfigHandlers();
   registerUpdateHandlers();
   registerSessionHandlers();
+  registerNetworkHandlers();
 
   createWindow();
 
   // Configure auto-updater after window is ready
   configureAutoUpdater();
+
+  // Start network monitoring
+  startNetworkMonitoring(mainWindow);
 
   // Cleanup old sessions (30+ days)
   cleanupOldSessions();

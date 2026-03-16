@@ -141,6 +141,13 @@ export interface AppVersion {
   lastUpdateTime?: number;
 }
 
+// ─── Network Status ──────────────────────────────────────────────────────────
+
+export interface NetworkStatus {
+  isOnline: boolean;
+  lastCheckedAt: number;
+}
+
 // ─── Installation Session (Resume) ────────────────────────────────────────
 
 export type InstallationSessionStatus = "active" | "completed" | "failed" | "interrupted";

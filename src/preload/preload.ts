@@ -10,6 +10,7 @@ import type {
   UpdateInfo,
   InstallationSession,
   InstallationHistory,
+  NetworkStatus,
 } from "../types";
 
 // Expose a safe, typed API to the renderer via window.api
@@ -103,6 +104,20 @@ const api = {
       ipcRenderer.invoke("session:markComplete", sessionId, config),
     clearActive: (): Promise<{ success: boolean }> =>
       ipcRenderer.invoke("session:clearActive"),
+  },
+
+  // Network status (offline mode)
+  network: {
+    getStatus: (): Promise<NetworkStatus> =>
+      ipcRenderer.invoke("network:status"),
+    check: (): Promise<NetworkStatus> =>
+      ipcRenderer.invoke("network:check"),
+    onStatusChanged: (callback: (status: NetworkStatus) => void) => {
+      ipcRenderer.on("network:status-changed", (_, data) => callback(data));
+    },
+    removeListener: () => {
+      ipcRenderer.removeAllListeners("network:status-changed");
+    },
   },
 } as const;
 

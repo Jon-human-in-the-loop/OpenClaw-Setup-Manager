@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { LanguageProvider } from "./context/LanguageContext";
 import { InstallationProvider, useInstallation } from "./context/InstallationContext";
 import { UpdateProvider } from "./context/UpdateContext";
+import { NetworkProvider } from "./context/NetworkContext";
 import { Wizard } from "./components/Wizard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { TitleBar } from "./components/TitleBar";
 import { UpdateNotification } from "./components/UpdateNotification";
 import { UpdateProgress } from "./components/UpdateProgress";
+import { ConnectionStatus } from "./components/ConnectionStatus";
 import { ResumeModal } from "./components/ResumeModal";
 import { InstallationHistory } from "./components/InstallationHistory";
 import type { InstallationSession } from "../types";
@@ -69,6 +71,7 @@ function AppContent(): JSX.Element {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background overflow-hidden">
+      <ConnectionStatus />
       <TitleBar />
       <main className="flex-1 overflow-hidden">
         <Wizard />
@@ -100,13 +103,15 @@ function AppContent(): JSX.Element {
 export default function App(): JSX.Element {
   return (
     <ErrorBoundary>
-      <UpdateProvider>
-        <LanguageProvider>
-          <InstallationProvider>
-            <AppContent />
-          </InstallationProvider>
-        </LanguageProvider>
-      </UpdateProvider>
+      <NetworkProvider>
+        <UpdateProvider>
+          <LanguageProvider>
+            <InstallationProvider>
+              <AppContent />
+            </InstallationProvider>
+          </LanguageProvider>
+        </UpdateProvider>
+      </NetworkProvider>
     </ErrorBoundary>
   );
 }

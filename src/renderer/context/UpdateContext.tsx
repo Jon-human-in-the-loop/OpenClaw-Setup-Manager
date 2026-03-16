@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { UpdateState, UpdateInfo, UpdateProgressEvent } from "../../types";
+import { useNetwork } from "./NetworkContext";
 
 interface UpdateContextType {
   // State
@@ -21,6 +22,7 @@ interface UpdateContextType {
 const UpdateContext = createContext<UpdateContextType | undefined>(undefined);
 
 export function UpdateProvider({ children }: { children: React.ReactNode }) {
+  const { isOnline } = useNetwork();
   const [state, setState] = useState<UpdateState>("idle");
   const [available, setAvailable] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -55,14 +57,18 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
       setState("error");
     });
 
-    // Check for updates on mount
-    checkForUpdates();
+    // Check for updates on mount only if online
+    if (isOnline) {
+      checkForUpdates();
+    } else {
+      setState("idle");
+    }
 
     // Cleanup listeners on unmount
     return () => {
       window.api.update.removeListeners();
     };
-  }, []);
+  }, [isOnline]);
 
   const checkForUpdates = async () => {
     try {
