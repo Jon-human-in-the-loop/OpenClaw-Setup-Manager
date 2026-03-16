@@ -11,6 +11,7 @@ dist-electron/
 # Build resources (keep icons and assets, ignore generated)
 !build/
 build/*.bmp
+!build/installer-header.bmp
 
 # Logs
 *.log
