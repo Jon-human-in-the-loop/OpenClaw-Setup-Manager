@@ -19,9 +19,8 @@ const api = {
   system: {
     check: (): Promise<SystemCheckResult> =>
       ipcRenderer.invoke("system:check"),
-    openUrl: (url: string): void => {
-      ipcRenderer.send("system:open-url", url);
-    },
+    openUrl: (url: string): Promise<void> =>
+      ipcRenderer.invoke("system:open-url", url),
   },
 
   // Installation
