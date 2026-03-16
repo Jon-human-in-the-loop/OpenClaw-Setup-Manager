@@ -1,5 +1,18 @@
 export type SetupType = "quick" | "cloud" | "full";
 export type Language = "es" | "en";
+export type WizardStep =
+  | "welcome"
+  | "system-check"
+  | "deployment"
+  | "security"
+  | "setup-type"
+  | "agent-name"
+  | "model"
+  | "api-key"
+  | "channels"
+  | "credentials"
+  | "installing"
+  | "success";
 
 // ─── Deployment types ────────────────────────────────────────────────────────
 
@@ -98,4 +111,95 @@ export interface InstallCompleteEvent {
   success: boolean;
   dashboardUrl?: string;
   message: string;
+}
+
+// ─── Auto-Update ────────────────────────────────────────────────────────────
+
+export type UpdateState = "idle" | "checking" | "available" | "downloading" | "downloaded" | "installing" | "error";
+
+export interface UpdateInfo {
+  version: string;
+  releaseNotes?: string;
+  releaseName?: string;
+  releaseDate?: string;
+}
+
+export interface UpdateCheckResult {
+  updateAvailable: boolean;
+  updateInfo?: UpdateInfo;
+}
+
+export interface UpdateProgressEvent {
+  percent: number;
+  bytesPerSecond: number;
+  total: number;
+  transferred: number;
+}
+
+export interface UpdateErrorEvent {
+  error: string;
+  code?: string;
+}
+
+export interface UpdatePreferences {
+  autoCheckForUpdates: boolean;
+  lastUpdateCheck?: number;
+  updateChannel: "latest" | "beta";
+  skipVersion?: string;
+}
+
+export interface AppVersion {
+  current: string;
+  previous?: string;
+  lastUpdateTime?: number;
+}
+
+// ─── Network Status ──────────────────────────────────────────────────────────
+
+export interface NetworkStatus {
+  isOnline: boolean;
+  lastCheckedAt: number;
+}
+
+// ─── Installation Session (Resume) ────────────────────────────────────────
+
+export type InstallationSessionStatus = "active" | "completed" | "failed" | "interrupted";
+
+export interface InstallationSession {
+  // Identifiers
+  sessionId: string;
+  createdAt: number; // timestamp
+  lastModifiedAt: number;
+
+  // Status
+  status: InstallationSessionStatus;
+  failureReason?: string;
+
+  // Configuration snapshot
+  currentStep: WizardStep;
+  setupType: SetupType;
+  language: Language;
+  agentName: string;
+  primaryModel: string;
+  fallbackModel?: string;
+  apiKey?: string;
+  channels: string[];
+  phoneNumber?: string;
+  telegramToken?: string;
+  discordToken?: string;
+  slackToken?: string;
+
+  // Progress tracking
+  completedSteps: WizardStep[];
+  installationStartTime?: number;
+  installationProgress: {
+    percent: number;
+    currentLog: string;
+    logs: string[];
+  };
+}
+
+export interface InstallationHistory {
+  sessions: InstallationSession[];
+  totalCount: number;
 }
