@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { MODEL_PROVIDERS } from "@/lib/openclaw-data";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, Star } from "lucide-react";
+import { ExternalLink, Star, AlertTriangle, ShieldAlert } from "lucide-react";
 
 interface ModelStepProps {
   primaryModel: string;
@@ -115,6 +115,64 @@ export default function ModelStep({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Ban risk warning for Anthropic */}
+      {selectedProvider?.id === "anthropic" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-4 rounded border border-red-500/60 bg-red-950/30"
+        >
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-red-400 font-display uppercase tracking-wide">
+                ⚠ Advertencia: Riesgo de Baneo de Cuenta Anthropic
+              </h4>
+              <p className="text-xs text-red-300/80 leading-relaxed">
+                Se han reportado casos de <strong className="text-red-300">baneos permanentes de cuentas</strong> de Anthropic por usar OpenClaw con autenticación OAuth o métodos no oficiales. Usuarios con suscripciones pagadas (Claude Max) también han sido afectados.
+              </p>
+              <ul className="text-xs text-red-300/70 space-y-1 list-none">
+                <li className="flex items-start gap-1.5"><span className="text-red-400 shrink-0">•</span> Anthropic detecta clientes de terceros que usan contextos de larga duración</li>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 shrink-0">•</span> El uso puede violar los Términos de Servicio (ToS) de Anthropic</li>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 shrink-0">•</span> No hay proceso claro de apelación una vez baneado</li>
+              </ul>
+              <p className="text-xs text-red-300/60 font-mono">
+                Alternativa segura: Usa tu <strong className="text-red-300">API Key oficial</strong> de console.anthropic.com en lugar de OAuth
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Ban risk warning for Google Gemini */}
+      {selectedProvider?.id === "google" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-4 rounded border border-red-500/60 bg-red-950/30"
+        >
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-red-400 font-display uppercase tracking-wide">
+                ⚠ Advertencia: Riesgo de Baneo de Cuenta Google
+              </h4>
+              <p className="text-xs text-red-300/80 leading-relaxed">
+                Múltiples usuarios han reportado <strong className="text-red-300">baneos permanentes de sus cuentas de Google</strong> por integrar Gemini con herramientas de terceros como OpenClaw. Esto puede causar la pérdida de acceso a Gmail, Drive y todos los servicios de Google.
+              </p>
+              <ul className="text-xs text-red-300/70 space-y-1 list-none">
+                <li className="flex items-start gap-1.5"><span className="text-red-400 shrink-0">•</span> El baneo afecta toda la cuenta Google, no solo Gemini</li>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 shrink-0">•</span> Cuentas antiguas (+5 años) y premium (ULTRA) también han sido baneadas</li>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 shrink-0">•</span> El error típico: "Gemini has been disabled for violation of Terms of Service"</li>
+              </ul>
+              <p className="text-xs text-red-300/60 font-mono">
+                Alternativa segura: Usa tu <strong className="text-red-300">API Key de Google AI Studio</strong> (aistudio.google.com) — nunca OAuth de Gemini CLI
+              </p>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       {/* API Key */}

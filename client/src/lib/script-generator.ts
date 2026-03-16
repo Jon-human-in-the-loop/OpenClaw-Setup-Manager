@@ -23,6 +23,9 @@ export interface InstallConfig {
 export function generateInstallScript(config: InstallConfig): string {
   const skillSlugs = config.selectedSkills.map((s) => s.slug);
   const isWindows = config.platform === "windows";
+  const isOllamaModel = config.primaryModel.startsWith("ollama/");
+  const ollamaModel = isOllamaModel ? config.primaryModel.replace("ollama/", "") : null;
+  const totalSteps = isOllamaModel ? 6 : 5;
 
   const lines: string[] = [
     "#!/bin/bash",
@@ -46,10 +49,39 @@ export function generateInstallScript(config: InstallConfig): string {
     'echo "  ╚═══════════════════════════════════════╝"',
     'echo "\\x1b[0m"',
     "",
-    "# ─── PASO 1: Verificar requisitos ───────────────────────",
-    'echo "\\n\\x1b[0;36m[1/5]\\x1b[0m Verificando requisitos del sistema..."',
+    `# ─── PASO 1: Verificar requisitos ───────────────────────`,
+    `echo "\\n\\x1b[0;36m[1/${totalSteps}]\\x1b[0m Verificando requisitos del sistema..."`,
     "",
   ];
+
+  // Ollama install step (inserted before Node check if using local model)
+  if (isOllamaModel && ollamaModel) {
+    lines.push(
+      `# ─── PASO 1.5: Instalar Ollama (modelo local) ───────────`,
+      `echo "\\n\\x1b[0;36m[1.5/${totalSteps}]\\x1b[0m Verificando Ollama para modelos locales..."`,
+      "",
+      "if command -v ollama &> /dev/null; then",
+      '  echo "\\x1b[0;32m✓\\x1b[0m Ollama ya instalado: $(ollama --version)"',
+      "else",
+      '  echo "\\x1b[0;33m⚠ Ollama no encontrado. Instalando...\\x1b[0m"',
+      '  curl -fsSL https://ollama.ai/install.sh | sh',
+      '  echo "\\x1b[0;32m✓\\x1b[0m Ollama instalado"',
+      "fi",
+      "",
+      "# Iniciar servicio Ollama si no está corriendo",
+      'if ! pgrep -x "ollama" > /dev/null 2>&1; then',
+      '  echo "Iniciando servicio Ollama en segundo plano..."',
+      "  ollama serve > /tmp/ollama.log 2>&1 &",
+      "  sleep 5",
+      "fi",
+      "",
+      `# Descargar modelo ${ollamaModel}`,
+      `echo "Descargando modelo ${ollamaModel} (puede tardar varios minutos según tu conexión)..."`,
+      `ollama pull ${ollamaModel}`,
+      `echo "\\x1b[0;32m✓\\x1b[0m Modelo ${ollamaModel} descargado y listo"`,
+      ""
+    );
+  }
 
   // Node check
   lines.push(
@@ -73,7 +105,7 @@ export function generateInstallScript(config: InstallConfig): string {
   // Step 2: Install OpenClaw
   lines.push(
     "# ─── PASO 2: Instalar OpenClaw ─────────────────────────",
-    'echo "\\n\\x1b[0;36m[2/5]\\x1b[0m Instalando OpenClaw..."',
+    `echo "\\n\\x1b[0;36m[2/${totalSteps}]\\x1b[0m Instalando OpenClaw..."`,
     ""
   );
 
@@ -103,7 +135,7 @@ export function generateInstallScript(config: InstallConfig): string {
   // Step 3: Configure
   lines.push(
     "# ─── PASO 3: Configurar OpenClaw ──────────────────────",
-    'echo "\\n\\x1b[0;36m[3/5]\\x1b[0m Configurando tu agente..."',
+    `echo "\\n\\x1b[0;36m[3/${totalSteps}]\\x1b[0m Configurando tu agente..."`,
     "",
     "# Crear directorio de configuración",
     "mkdir -p ~/.openclaw/workspace",
@@ -144,7 +176,7 @@ export function generateInstallScript(config: InstallConfig): string {
   // Step 5: Install skills
   lines.push(
     "# ─── PASO 4: Instalar Skills ─────────────────────────",
-    'echo "\\n\\x1b[0;36m[4/5]\\x1b[0m Instalando skills desde ClawHub..."',
+    `echo "\\n\\x1b[0;36m[4/${totalSteps}]\\x1b[0m Instalando skills desde ClawHub..."`,
     "",
     "# Instalar ClawHub CLI",
     "npm install -g clawdhub 2>/dev/null || true",
@@ -167,7 +199,7 @@ export function generateInstallScript(config: InstallConfig): string {
   // Step 6: Launch
   lines.push(
     "# ─── PASO 5: Iniciar OpenClaw ────────────────────────",
-    'echo "\\n\\x1b[0;36m[5/5]\\x1b[0m Iniciando OpenClaw..."',
+    `echo "\\n\\x1b[0;36m[5/${totalSteps}]\\x1b[0m Iniciando OpenClaw..."`,
     "",
     "# Ejecutar doctor para verificar",
     "openclaw doctor || true",
@@ -317,6 +349,9 @@ ${envLines}
 export function generateCompleteExecutable(config: InstallConfig): string {
   const jsonConfig = generateJsonConfig(config);
   const skillSlugs = config.selectedSkills.map((s) => s.slug);
+  const isOllamaModel = config.primaryModel.startsWith("ollama/");
+  const ollamaModel = isOllamaModel ? config.primaryModel.replace("ollama/", "") : null;
+  const totalSteps = isOllamaModel ? 7 : 6;
   // Use btoa for client-side base64 encoding (with UTF-8 support)
   const encodedJson = typeof window !== 'undefined'
     ? btoa(unescape(encodeURIComponent(jsonConfig)))
@@ -357,9 +392,38 @@ export function generateCompleteExecutable(config: InstallConfig): string {
     'echo "\\x1b[0m"',
     "",
     "# ─── PASO 1: Verificar requisitos ───────────────────────",
-    'echo "\\n\\x1b[0;36m[1/6]\\x1b[0m Verificando requisitos del sistema..."',
+    `echo "\\n\\x1b[0;36m[1/${totalSteps}]\\x1b[0m Verificando requisitos del sistema..."`,
     "",
   ];
+
+  // Ollama install step for local models
+  if (isOllamaModel && ollamaModel) {
+    lines.push(
+      "# ─── PASO 1.5: Instalar Ollama (modelo local) ───────────",
+      `echo "\\n\\x1b[0;36m[1.5/${totalSteps}]\\x1b[0m Verificando Ollama para modelos locales..."`,
+      "",
+      "if command -v ollama &> /dev/null; then",
+      '  echo "\\x1b[0;32m✓\\x1b[0m Ollama ya instalado: $(ollama --version)"',
+      "else",
+      '  echo "\\x1b[0;33m⚠ Ollama no encontrado. Instalando...\\x1b[0m"',
+      '  curl -fsSL https://ollama.ai/install.sh | sh',
+      '  echo "\\x1b[0;32m✓\\x1b[0m Ollama instalado"',
+      "fi",
+      "",
+      "# Iniciar servicio Ollama si no está corriendo",
+      'if ! pgrep -x "ollama" > /dev/null 2>&1; then',
+      '  echo "Iniciando servicio Ollama en segundo plano..."',
+      "  ollama serve > /tmp/ollama.log 2>&1 &",
+      "  sleep 5",
+      "fi",
+      "",
+      `# Descargar modelo ${ollamaModel}`,
+      `echo "Descargando modelo ${ollamaModel} (puede tardar varios minutos según tu conexión)..."`,
+      `ollama pull ${ollamaModel}`,
+      `echo "\\x1b[0;32m✓\\x1b[0m Modelo ${ollamaModel} descargado y listo"`,
+      ""
+    );
+  }
 
   // Node check
   lines.push(
@@ -383,7 +447,7 @@ export function generateCompleteExecutable(config: InstallConfig): string {
   // Step 2: Install OpenClaw
   lines.push(
     "# ─── PASO 2: Instalar OpenClaw ─────────────────────────",
-    'echo "\\n\\x1b[0;36m[2/6]\\x1b[0m Instalando OpenClaw..."',
+    `echo "\\n\\x1b[0;36m[2/${totalSteps}]\\x1b[0m Instalando OpenClaw..."`,
     "",
     "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard",
     "",
@@ -398,7 +462,7 @@ export function generateCompleteExecutable(config: InstallConfig): string {
   // Step 3: Create directories
   lines.push(
     "# ─── PASO 3: Crear directorios ─────────────────────────",
-    'echo "\\n\\x1b[0;36m[3/6]\\x1b[0m Creando directorios..."',
+    `echo "\\n\\x1b[0;36m[3/${totalSteps}]\\x1b[0m Creando directorios..."`,
     "",
     "mkdir -p ~/.openclaw/workspace",
     "mkdir -p ~/.openclaw/skills",
@@ -409,7 +473,7 @@ export function generateCompleteExecutable(config: InstallConfig): string {
   // Step 4: Write config from embedded base64
   lines.push(
     "# ─── PASO 4: Escribir configuración ────────────────────",
-    'echo "\\n\\x1b[0;36m[4/6]\\x1b[0m Escribiendo configuración..."',
+    `echo "\\n\\x1b[0;36m[4/${totalSteps}]\\x1b[0m Escribiendo configuración..."`,
     "",
     'echo "$OPENCLAW_CONFIG_B64" | base64 -d > ~/.openclaw/openclaw.json',
     'echo "\\x1b[0;32m✓\\x1b[0m Configuración escrita en ~/.openclaw/openclaw.json"',
@@ -423,7 +487,7 @@ export function generateCompleteExecutable(config: InstallConfig): string {
   if (apiKeyEntries.length > 0) {
     lines.push(
       "# ─── PASO 5: Configurar API Keys ──────────────────────",
-      'echo "\\n\\x1b[0;36m[5/6]\\x1b[0m Configurando API keys..."',
+      `echo "\\n\\x1b[0;36m[5/${totalSteps}]\\x1b[0m Configurando API keys..."`,
       ""
     );
     for (const [key, value] of apiKeyEntries) {
@@ -439,7 +503,7 @@ export function generateCompleteExecutable(config: InstallConfig): string {
   // Step 6: Install skills
   lines.push(
     "# ─── PASO 6: Instalar Skills ──────────────────────────",
-    'echo "\\n\\x1b[0;36m[6/6]\\x1b[0m Instalando skills desde ClawHub..."',
+    `echo "\\n\\x1b[0;36m[6/${totalSteps}]\\x1b[0m Instalando skills desde ClawHub..."`,
     "",
     "npm install -g clawdhub 2>/dev/null || true",
     ""

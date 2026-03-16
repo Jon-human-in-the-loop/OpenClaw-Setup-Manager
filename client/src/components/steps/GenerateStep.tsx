@@ -15,6 +15,8 @@ import {
   Terminal,
   ChevronDown,
   ChevronUp,
+  ShieldAlert,
+  Cpu,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Skill } from "@/lib/openclaw-data";
@@ -65,6 +67,9 @@ export default function GenerateStep({
     }
   }, [copyToClipboard]);
 
+  const isOllamaModel = primaryModel.startsWith("ollama/");
+  const isHighRiskProvider = primaryModel.startsWith("anthropic/") || primaryModel.startsWith("google/");
+
   const oneLiner = `curl -fsSL https://openclaw.ai/install.sh | bash`;
 
   const getActiveContent = () => {
@@ -101,6 +106,48 @@ export default function GenerateStep({
           Descarga los archivos o copia los comandos para instalar OpenClaw con tu configuración personalizada.
         </p>
       </div>
+
+      {/* Ollama prerequisite notice */}
+      {isOllamaModel && (
+        <div className="p-4 rounded border border-[oklch(0.78_0.15_210_/_0.5)] bg-[oklch(0.78_0.15_210_/_0.05)]">
+          <div className="flex items-start gap-3">
+            <Cpu className="w-5 h-5 text-neon-cyan shrink-0 mt-0.5" />
+            <div className="space-y-1.5">
+              <h4 className="text-sm font-bold text-neon-cyan font-display uppercase tracking-wide">
+                Modelo Local — Ollama se instalará automáticamente
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                El script detectará si Ollama está instalado. Si no, lo instalará y descargará el modelo <span className="text-neon-cyan font-mono">{primaryModel.replace("ollama/", "")}</span> automáticamente. Este proceso puede tardar varios minutos dependiendo de tu conexión (los modelos pesan varios GB).
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li className="flex items-start gap-1.5"><span className="text-neon-cyan shrink-0">→</span> Requiere al menos 8GB de RAM para modelos 7B</li>
+                <li className="flex items-start gap-1.5"><span className="text-neon-cyan shrink-0">→</span> Requiere al menos 16GB de RAM para modelos 70B (Llama 3.3)</li>
+                <li className="flex items-start gap-1.5"><span className="text-neon-cyan shrink-0">→</span> GPU opcional pero acelera significativamente la inferencia</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final ban risk warning for Anthropic/Google */}
+      {isHighRiskProvider && (
+        <div className="p-4 rounded border border-red-500/60 bg-red-950/30">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div className="space-y-1.5">
+              <h4 className="text-sm font-bold text-red-400 font-display uppercase tracking-wide">
+                ⚠ Recordatorio: Riesgo de Baneo
+              </h4>
+              <p className="text-xs text-red-300/80 leading-relaxed">
+                Estás usando <span className="text-red-300 font-mono font-semibold">{primaryModel}</span>. Asegúrate de usar tu <strong>API Key oficial</strong> y no métodos de autenticación OAuth o Gemini CLI, ya que estos pueden resultar en el baneo permanente de tu cuenta.
+              </p>
+              <p className="text-xs text-red-300/60">
+                El script generado usa API Key directa — esto es lo correcto. No uses tokens de OAuth.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
