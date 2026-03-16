@@ -20,7 +20,7 @@ export function ApiKey(): JSX.Element {
 
   const validation = apiKey.trim() ? validateApiKey(apiKey.trim(), providerId) : null;
   const isValid = validation?.valid ?? false;
-  const canContinue = apiKey.trim().length > 0;
+  const canContinue = isValid;
 
   const guideKey = `apikey.guide.${providerId}` as "apikey.guide.anthropic" | "apikey.guide.openai" | "apikey.guide.google";
   const apiKeyUrl = provider?.apiKeyUrl;
