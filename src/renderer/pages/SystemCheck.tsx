@@ -94,6 +94,20 @@ export function SystemCheck(): JSX.Element {
         fixKey: res.ollamaInstalled ? undefined : "systemcheck.fix.ollama",
         fixUrl: res.ollamaInstalled ? undefined : "https://ollama.ai",
       },
+      {
+        id: "docker",
+        labelKey: "systemcheck.docker",
+        status: res.platformCapabilities.docker.installed
+          ? res.platformCapabilities.docker.running ? "ok" : "warn"
+          : "warn",
+        detail: res.platformCapabilities.docker.installed
+          ? res.platformCapabilities.docker.running
+            ? t(language, "systemcheck.docker.ok", { version: res.platformCapabilities.docker.version ?? "" })
+            : t(language, "systemcheck.docker.installed_not_running")
+          : t(language, "systemcheck.docker.missing"),
+        fixKey: res.platformCapabilities.docker.running ? undefined : "systemcheck.fix.docker",
+        fixUrl: res.platformCapabilities.docker.installed ? undefined : "https://www.docker.com/products/docker-desktop",
+      },
     ];
     setItems(built);
   };
