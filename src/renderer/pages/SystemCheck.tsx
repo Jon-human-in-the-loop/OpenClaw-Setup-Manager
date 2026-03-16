@@ -84,6 +84,16 @@ export function SystemCheck(): JSX.Element {
           ? t(language, "systemcheck.git.ok")
           : t(language, "systemcheck.git.missing"),
       },
+      {
+        id: "ollama",
+        labelKey: "systemcheck.ollama",
+        status: res.ollamaInstalled ? "ok" : "warn",
+        detail: res.ollamaInstalled
+          ? t(language, "systemcheck.ollama.ok", { version: res.ollamaVersion ?? "" })
+          : t(language, "systemcheck.ollama.missing"),
+        fixKey: res.ollamaInstalled ? undefined : "systemcheck.fix.ollama",
+        fixUrl: res.ollamaInstalled ? undefined : "https://ollama.ai",
+      },
     ];
     setItems(built);
   };

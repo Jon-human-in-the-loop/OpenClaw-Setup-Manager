@@ -66,6 +66,17 @@ function isGitInstalled(): boolean {
   }
 }
 
+// ─── Ollama ──────────────────────────────────────────────────────────────────
+
+function getOllamaVersion(): { installed: boolean; version: string | null } {
+  try {
+    const raw = execSync("ollama --version", { encoding: "utf8" }).trim();
+    return { installed: true, version: raw };
+  } catch {
+    return { installed: false, version: null };
+  }
+}
+
 // ─── Docker ──────────────────────────────────────────────────────────────────
 
 function getDockerInfo(): DockerInfo {
@@ -174,6 +185,7 @@ export function registerSystemHandlers(): void {
     const portAvailable = await checkPort(18789);
     const diskSpaceGB = getDiskSpaceGB();
     const platformCapabilities = getPlatformCapabilities();
+    const ollama = getOllamaVersion();
 
     return {
       nodeInstalled: node.installed,
@@ -183,6 +195,8 @@ export function registerSystemHandlers(): void {
       diskSpaceGB,
       diskSpaceMeetsRequirement: diskSpaceGB >= 5,
       gitInstalled: isGitInstalled(),
+      ollamaInstalled: ollama.installed,
+      ollamaVersion: ollama.version,
       platform: process.platform,
       arch: process.arch,
       platformCapabilities,
