@@ -5,12 +5,15 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { SetupType, InstallConfig } from "../../types";
+import type { SetupType, InstallConfig, DeploymentType, PlatformCapabilities, SecurityConfig } from "../../types";
 import { getDefaultModelForSetupType } from "../lib/models";
+import { generateGatewayToken } from "../lib/security";
 
 export type WizardStep =
   | "welcome"
   | "system-check"
+  | "deployment"       // NUEVO: selección de entorno (local / Docker / WSL2)
+  | "security"         // NUEVO: token de gateway + advertencias
   | "setup-type"
   | "agent-name"
   | "model"
@@ -23,6 +26,8 @@ export type WizardStep =
 export const WIZARD_STEPS: WizardStep[] = [
   "welcome",
   "system-check",
+  "deployment",
+  "security",
   "setup-type",
   "agent-name",
   "model",
@@ -36,17 +41,33 @@ export const WIZARD_STEPS: WizardStep[] = [
 interface InstallationState {
   step: WizardStep;
   stepIndex: number;
+
+  // Plataforma (cargada tras system-check)
+  platformCapabilities: PlatformCapabilities | null;
+
+  // Despliegue
+  deploymentType: DeploymentType;
+
+  // Seguridad
+  gatewayToken: string;
+  gatewayAuthEnabled: boolean;
+
+  // Setup
   setupType: SetupType;
   agentName: string;
   agentEmoji: string;
   primaryModel: string;
   fallbackModel?: string;
   apiKey: string;
+
+  // Canales
   channels: Set<string>;
   phoneNumber: string;
   telegramToken: string;
   discordToken: string;
   slackToken: string;
+
+  // Estado de instalación
   isInstalling: boolean;
   installPercent: number;
   installMessage: string;
@@ -60,22 +81,42 @@ interface InstallationContextValue extends InstallationState {
   goNext: () => void;
   goPrev: () => void;
   goTo: (step: WizardStep) => void;
+
+  // Plataforma
+  setPlatformCapabilities: (caps: PlatformCapabilities) => void;
+
+  // Despliegue
+  setDeploymentType: (type: DeploymentType) => void;
+
+  // Seguridad
+  setGatewayToken: (token: string) => void;
+  setGatewayAuthEnabled: (enabled: boolean) => void;
+  regenerateToken: () => void;
+
+  // Setup
   setSetupType: (type: SetupType) => void;
   setAgentName: (name: string) => void;
   setAgentEmoji: (emoji: string) => void;
   setPrimaryModel: (model: string) => void;
   setFallbackModel: (model: string | undefined) => void;
   setApiKey: (key: string) => void;
+
+  // Canales
   toggleChannel: (channelId: string) => void;
   setPhoneNumber: (v: string) => void;
   setTelegramToken: (v: string) => void;
   setDiscordToken: (v: string) => void;
   setSlackToken: (v: string) => void;
+
+  // Instalación
   setInstallProgress: (percent: number, message: string, log?: string) => void;
   setInstallComplete: (success: boolean, message: string, dashboardUrl?: string) => void;
   buildConfig: (language: "es" | "en") => InstallConfig;
+
+  // Computed
   needsApiKey: boolean;
   needsCredentials: boolean;
+  isDockerDeployment: boolean;
 }
 
 const InstallationContext = createContext<InstallationContextValue | null>(null);
@@ -84,17 +125,26 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
   const [state, setState] = useState<InstallationState>({
     step: "welcome",
     stepIndex: 0,
+
+    platformCapabilities: null,
+    deploymentType: "local",
+
+    gatewayToken: generateGatewayToken(),
+    gatewayAuthEnabled: true,
+
     setupType: "cloud",
     agentName: "Clawd",
     agentEmoji: "🦞",
     primaryModel: "anthropic/claude-sonnet-4-5",
     fallbackModel: undefined,
     apiKey: "",
+
     channels: new Set(["whatsapp"]),
     phoneNumber: "",
     telegramToken: "",
     discordToken: "",
     slackToken: "",
+
     isInstalling: false,
     installPercent: 0,
     installMessage: "",
@@ -104,16 +154,18 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
     errorMessage: "",
   });
 
+  // ─── Navegación ────────────────────────────────────────────────────────────
+
   const computeNextStep = useCallback((current: WizardStep, st: InstallationState): WizardStep => {
     const idx = WIZARD_STEPS.indexOf(current);
 
-    // Skip api-key if local model or quick setup
+    // Skip api-key si modelo local o quick setup
     if (current === "model") {
       const isLocal = st.primaryModel.startsWith("ollama/");
       if (isLocal || st.setupType === "quick") return "channels";
     }
 
-    // Skip credentials if no channels with tokens
+    // Skip credentials si no hay canales
     if (current === "channels") {
       const hasChannels = st.channels.size > 0 && !st.channels.has("none");
       if (!hasChannels) return "installing";
@@ -125,13 +177,11 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
   const computePrevStep = useCallback((current: WizardStep, st: InstallationState): WizardStep => {
     const idx = WIZARD_STEPS.indexOf(current);
 
-    // Skip api-key if going back from channels
     if (current === "channels") {
       const isLocal = st.primaryModel.startsWith("ollama/");
       if (isLocal || st.setupType === "quick") return "model";
     }
 
-    // Skip credentials going back from installing
     if (current === "installing") {
       const hasChannels = st.channels.size > 0 && !st.channels.has("none");
       if (!hasChannels) return "channels";
@@ -155,11 +205,34 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
   }, [computePrevStep]);
 
   const goTo = useCallback((step: WizardStep) => {
+    setState((prev) => ({ ...prev, step, stepIndex: WIZARD_STEPS.indexOf(step) }));
+  }, []);
+
+  // ─── Setters ───────────────────────────────────────────────────────────────
+
+  const setPlatformCapabilities = useCallback((caps: PlatformCapabilities) => {
     setState((prev) => ({
       ...prev,
-      step,
-      stepIndex: WIZARD_STEPS.indexOf(step),
+      platformCapabilities: caps,
+      // Preseleccionar el deployment recomendado para este SO
+      deploymentType: caps.recommendedDeployment,
     }));
+  }, []);
+
+  const setDeploymentType = useCallback((type: DeploymentType) => {
+    setState((prev) => ({ ...prev, deploymentType: type }));
+  }, []);
+
+  const setGatewayToken = useCallback((token: string) => {
+    setState((prev) => ({ ...prev, gatewayToken: token }));
+  }, []);
+
+  const setGatewayAuthEnabled = useCallback((enabled: boolean) => {
+    setState((prev) => ({ ...prev, gatewayAuthEnabled: enabled }));
+  }, []);
+
+  const regenerateToken = useCallback(() => {
+    setState((prev) => ({ ...prev, gatewayToken: generateGatewayToken() }));
   }, []);
 
   const setSetupType = useCallback((type: SetupType) => {
@@ -171,25 +244,11 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
     }));
   }, []);
 
-  const setAgentName = useCallback((name: string) => {
-    setState((prev) => ({ ...prev, agentName: name }));
-  }, []);
-
-  const setAgentEmoji = useCallback((emoji: string) => {
-    setState((prev) => ({ ...prev, agentEmoji: emoji }));
-  }, []);
-
-  const setPrimaryModel = useCallback((model: string) => {
-    setState((prev) => ({ ...prev, primaryModel: model }));
-  }, []);
-
-  const setFallbackModel = useCallback((model: string | undefined) => {
-    setState((prev) => ({ ...prev, fallbackModel: model }));
-  }, []);
-
-  const setApiKey = useCallback((key: string) => {
-    setState((prev) => ({ ...prev, apiKey: key }));
-  }, []);
+  const setAgentName = useCallback((name: string) => setState((p) => ({ ...p, agentName: name })), []);
+  const setAgentEmoji = useCallback((emoji: string) => setState((p) => ({ ...p, agentEmoji: emoji })), []);
+  const setPrimaryModel = useCallback((model: string) => setState((p) => ({ ...p, primaryModel: model })), []);
+  const setFallbackModel = useCallback((model: string | undefined) => setState((p) => ({ ...p, fallbackModel: model })), []);
+  const setApiKey = useCallback((key: string) => setState((p) => ({ ...p, apiKey: key })), []);
 
   const toggleChannel = useCallback((channelId: string) => {
     setState((prev) => {
@@ -234,19 +293,31 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
     }));
   }, []);
 
-  const buildConfig = useCallback((language: "es" | "en"): InstallConfig => ({
-    setupType: state.setupType,
-    language,
-    agentName: state.agentName,
-    primaryModel: state.primaryModel,
-    fallbackModel: state.fallbackModel,
-    apiKey: state.apiKey || undefined,
-    channels: Array.from(state.channels).filter((c) => c !== "none"),
-    phoneNumber: state.phoneNumber || undefined,
-    telegramToken: state.telegramToken || undefined,
-    discordToken: state.discordToken || undefined,
-    slackToken: state.slackToken || undefined,
-  }), [state]);
+  const buildConfig = useCallback((language: "es" | "en"): InstallConfig => {
+    const security: SecurityConfig = {
+      gatewayToken: state.gatewayToken,
+      gatewayAuthMode: state.gatewayAuthEnabled ? "token" : "none",
+      firewallConfigured: false, // se actualiza post-install
+    };
+
+    return {
+      setupType: state.setupType,
+      language,
+      deploymentType: state.deploymentType,
+      security,
+      agentName: state.agentName,
+      primaryModel: state.primaryModel,
+      fallbackModel: state.fallbackModel,
+      apiKey: state.apiKey || undefined,
+      channels: Array.from(state.channels).filter((c) => c !== "none"),
+      phoneNumber: state.phoneNumber || undefined,
+      telegramToken: state.telegramToken || undefined,
+      discordToken: state.discordToken || undefined,
+      slackToken: state.slackToken || undefined,
+    };
+  }, [state]);
+
+  // ─── Computed ──────────────────────────────────────────────────────────────
 
   const needsApiKey = !state.primaryModel.startsWith("ollama/") && state.setupType !== "quick";
 
@@ -258,29 +329,26 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
       state.channels.has("discord") ||
       state.channels.has("slack"));
 
+  const isDockerDeployment =
+    state.deploymentType === "docker" || state.deploymentType === "wsl2-docker";
+
   return (
     <InstallationContext.Provider
       value={{
         ...state,
-        goNext,
-        goPrev,
-        goTo,
+        goNext, goPrev, goTo,
+        setPlatformCapabilities,
+        setDeploymentType,
+        setGatewayToken, setGatewayAuthEnabled, regenerateToken,
         setSetupType,
-        setAgentName,
-        setAgentEmoji,
-        setPrimaryModel,
-        setFallbackModel,
+        setAgentName, setAgentEmoji,
+        setPrimaryModel, setFallbackModel,
         setApiKey,
         toggleChannel,
-        setPhoneNumber,
-        setTelegramToken,
-        setDiscordToken,
-        setSlackToken,
-        setInstallProgress,
-        setInstallComplete,
+        setPhoneNumber, setTelegramToken, setDiscordToken, setSlackToken,
+        setInstallProgress, setInstallComplete,
         buildConfig,
-        needsApiKey,
-        needsCredentials,
+        needsApiKey, needsCredentials, isDockerDeployment,
       }}
     >
       {children}
