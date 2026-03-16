@@ -4,8 +4,13 @@ import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { registerSystemHandlers } from "./handlers/system.handler";
 import { registerInstallHandlers } from "./handlers/install.handler";
 import { registerConfigHandlers } from "./handlers/config.handler";
+import { registerUpdateHandlers, configureAutoUpdater } from "./handlers/update.handler";
 
 let mainWindow: BrowserWindow | null = null;
+
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindow;
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -55,8 +60,12 @@ app.whenReady().then(() => {
   registerSystemHandlers();
   registerInstallHandlers(mainWindow);
   registerConfigHandlers();
+  registerUpdateHandlers();
 
   createWindow();
+
+  // Configure auto-updater after window is ready
+  configureAutoUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

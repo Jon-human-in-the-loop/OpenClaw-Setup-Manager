@@ -4,6 +4,10 @@ import type {
   SystemCheckResult,
   InstallProgressEvent,
   InstallCompleteEvent,
+  UpdateCheckResult,
+  UpdateProgressEvent,
+  UpdateErrorEvent,
+  UpdateInfo,
 } from "../types";
 
 // Expose a safe, typed API to the renderer via window.api
@@ -47,6 +51,36 @@ const api = {
     minimize: () => ipcRenderer.send("window:minimize"),
     maximize: () => ipcRenderer.send("window:maximize"),
     close: () => ipcRenderer.send("window:close"),
+  },
+
+  // Auto-update
+  update: {
+    check: (): Promise<UpdateCheckResult> =>
+      ipcRenderer.invoke("update:check"),
+    download: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("update:download"),
+    install: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("update:install"),
+    getVersion: (): Promise<{ version: string }> =>
+      ipcRenderer.invoke("app:version"),
+    onAvailable: (callback: (info: UpdateInfo) => void) => {
+      ipcRenderer.on("update:available", (_, data) => callback(data));
+    },
+    onDownloaded: (callback: () => void) => {
+      ipcRenderer.on("update:downloaded", () => callback());
+    },
+    onProgress: (callback: (progress: UpdateProgressEvent) => void) => {
+      ipcRenderer.on("update:progress", (_, data) => callback(data));
+    },
+    onError: (callback: (error: UpdateErrorEvent) => void) => {
+      ipcRenderer.on("update:error", (_, data) => callback(data));
+    },
+    removeListeners: () => {
+      ipcRenderer.removeAllListeners("update:available");
+      ipcRenderer.removeAllListeners("update:downloaded");
+      ipcRenderer.removeAllListeners("update:progress");
+      ipcRenderer.removeAllListeners("update:error");
+    },
   },
 } as const;
 

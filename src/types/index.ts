@@ -99,3 +99,44 @@ export interface InstallCompleteEvent {
   dashboardUrl?: string;
   message: string;
 }
+
+// ─── Auto-Update ────────────────────────────────────────────────────────────
+
+export type UpdateState = "idle" | "checking" | "available" | "downloading" | "downloaded" | "installing" | "error";
+
+export interface UpdateInfo {
+  version: string;
+  releaseNotes?: string;
+  releaseName?: string;
+  releaseDate?: string;
+}
+
+export interface UpdateCheckResult {
+  updateAvailable: boolean;
+  updateInfo?: UpdateInfo;
+}
+
+export interface UpdateProgressEvent {
+  percent: number;
+  bytesPerSecond: number;
+  total: number;
+  transferred: number;
+}
+
+export interface UpdateErrorEvent {
+  error: string;
+  code?: string;
+}
+
+export interface UpdatePreferences {
+  autoCheckForUpdates: boolean;
+  lastUpdateCheck?: number;
+  updateChannel: "latest" | "beta";
+  skipVersion?: string;
+}
+
+export interface AppVersion {
+  current: string;
+  previous?: string;
+  lastUpdateTime?: number;
+}
