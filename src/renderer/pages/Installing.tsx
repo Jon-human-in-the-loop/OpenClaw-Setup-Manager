@@ -115,14 +115,14 @@ export function Installing(): JSX.Element {
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">
                 {isInitializing
-                  ? t(language, "installing.initializing") || "Inicializando instalación..."
+                  ? t(language, "installing.initializing")
                   : isInstalling
                   ? t(language, "installing.title")
                   : t(language, "installing.almostDone")}
               </h2>
               <p className="text-sm text-muted-foreground">
                 {isInitializing
-                  ? t(language, "installing.initializing.subtitle") || "Generando configuración..."
+                  ? t(language, "installing.initializing.subtitle")
                   : isInstalling
                   ? t(language, "installing.subtitle")
                   : installMessage}

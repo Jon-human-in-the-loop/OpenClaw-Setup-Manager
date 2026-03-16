@@ -256,6 +256,10 @@ const translations = {
   "installing.step.docker.pull": { es: "Descargando imagen Docker...", en: "Pulling Docker image..." },
   "installing.step.docker.run": { es: "Iniciando contenedor...", en: "Starting container..." },
   "installing.step.docker.config": { es: "Configurando contenedor...", en: "Configuring container..." },
+
+  // ── Installing — Inicialización ───────────────────────────────────────────
+  "installing.initializing": { es: "Inicializando instalación", en: "Initializing installation" },
+  "installing.initializing.subtitle": { es: "Preparando configuración...", en: "Preparing configuration..." },
 } as const;
 
 type TranslationKey = keyof typeof translations;
