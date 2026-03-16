@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "Easy installer for OpenClaw — guided setup for non-technical users",
   "main": "out/main/index.js",
-  "author": "OpenClaw",
+  "author": {
+    "name": "OpenClaw",
+    "email": "openclaw@users.noreply.github.com"
+  },
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",

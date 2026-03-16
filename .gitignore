@@ -7,7 +7,13 @@ node_modules/
 out/
 dist/
 dist-electron/
-build/
+# Keep icon assets in build/
+build/*
+!build/icons/
+!build/icon.ico
+!build/icon.icns
+!build/icon.png
+!build/installer-header.bmp
 
 # Logs
 *.log
