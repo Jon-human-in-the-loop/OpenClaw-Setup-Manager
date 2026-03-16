@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import {
-  MODELS,
   MODEL_PROVIDERS,
   getProviderForModel,
   getModel,

@@ -16,7 +16,7 @@ import type { InstallationSession } from "../types";
 function AppContent(): JSX.Element {
   const [resumeSession, setResumeSession] = useState<InstallationSession | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const { goToStep, setAgentName, setPrimaryModel, setChannels, goNext } = useInstallation();
+  const { goTo, setAgentName, setPrimaryModel } = useInstallation();
 
   // Check for active session on mount
   useEffect(() => {
@@ -39,10 +39,10 @@ function AppContent(): JSX.Element {
       // Restore session state
       setAgentName(session.agentName);
       setPrimaryModel(session.primaryModel);
-      setChannels(session.channels);
+      // Note: Channel restoration will be handled when user reaches channels step
 
       // Jump to the step where user left off
-      goToStep(session.currentStep);
+      goTo(session.currentStep);
       setResumeSession(null);
     } catch (error) {
       console.error("Failed to resume session:", error);

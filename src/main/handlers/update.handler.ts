@@ -1,6 +1,6 @@
 import { autoUpdater } from "electron-updater";
 import { ipcMain, app } from "electron";
-import { UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../types/index.js";
+import type { UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../../types";
 
 // Configure auto-updater
 export function configureAutoUpdater() {
@@ -35,11 +35,12 @@ export function registerUpdateHandlers() {
           updateAvailable: true,
           updateInfo: {
             version: result.updateInfo.version,
-            releaseNotes: typeof result.updateInfo.releaseNotes === "string"
-              ? result.updateInfo.releaseNotes
-              : result.updateInfo.releaseNotes?.[0]?.note,
-            releaseName: result.updateInfo.releaseName,
-            releaseDate: result.updateInfo.releaseDate,
+            releaseNotes:
+              typeof result.updateInfo.releaseNotes === "string"
+                ? result.updateInfo.releaseNotes
+                : result.updateInfo.releaseNotes?.[0]?.note || undefined,
+            releaseName: result.updateInfo.releaseName || undefined,
+            releaseDate: result.updateInfo.releaseDate || undefined,
           },
         };
       }
@@ -85,11 +86,12 @@ export function registerUpdateHandlers() {
     if (mainWindow) {
       mainWindow.webContents.send("update:available", {
         version: _info.version,
-        releaseNotes: typeof _info.releaseNotes === "string"
-          ? _info.releaseNotes
-          : _info.releaseNotes?.[0]?.note,
-        releaseName: _info.releaseName,
-        releaseDate: _info.releaseDate,
+        releaseNotes:
+          typeof _info.releaseNotes === "string"
+            ? _info.releaseNotes
+            : _info.releaseNotes?.[0]?.note || undefined,
+        releaseName: _info.releaseName || undefined,
+        releaseDate: _info.releaseDate || undefined,
       });
     }
   });
@@ -117,12 +119,12 @@ export function registerUpdateHandlers() {
   });
 
   // Error event listener
-  autoUpdater.on("error", (error) => {
+  autoUpdater.on("error", (error: any) => {
     const mainWindow = require("../index").getMainWindow?.();
     if (mainWindow) {
       const errorEvent: UpdateErrorEvent = {
-        error: error.message,
-        code: error.code,
+        error: error?.message || String(error),
+        code: error?.code,
       };
       mainWindow.webContents.send("update:error", errorEvent);
     }

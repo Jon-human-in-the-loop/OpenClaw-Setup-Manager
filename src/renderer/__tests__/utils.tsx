@@ -1,5 +1,5 @@
 import { ReactElement } from "react";
-import { render, RenderOptions } from "@testing-library/react";
+import { render, RenderOptions, RenderResult } from "@testing-library/react";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { InstallationProvider } from "@/context/InstallationContext";
 
@@ -9,7 +9,7 @@ import { InstallationProvider } from "@/context/InstallationContext";
 function renderWithProviders(
   ui: ReactElement,
   options?: Omit<RenderOptions, "wrapper">
-) {
+): RenderResult {
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <LanguageProvider>

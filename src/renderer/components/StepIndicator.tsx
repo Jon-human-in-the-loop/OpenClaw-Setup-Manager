@@ -16,6 +16,8 @@ const VISIBLE_STEPS: WizardStep[] = [
 const STEP_NUMBERS: Record<WizardStep, number> = {
   "welcome": 1,
   "system-check": 2,
+  "deployment": 3,
+  "security": 3,
   "setup-type": 3,
   "agent-name": 4,
   "model": 5,

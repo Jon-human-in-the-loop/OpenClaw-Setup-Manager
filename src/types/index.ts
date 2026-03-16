@@ -1,5 +1,18 @@
 export type SetupType = "quick" | "cloud" | "full";
 export type Language = "es" | "en";
+export type WizardStep =
+  | "welcome"
+  | "system-check"
+  | "deployment"
+  | "security"
+  | "setup-type"
+  | "agent-name"
+  | "model"
+  | "api-key"
+  | "channels"
+  | "credentials"
+  | "installing"
+  | "success";
 
 // ─── Deployment types ────────────────────────────────────────────────────────
 

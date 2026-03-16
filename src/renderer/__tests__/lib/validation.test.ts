@@ -235,10 +235,8 @@ describe("validation - input validation functions", () => {
       validators.forEach(({ fn, args }) => {
         const result = (fn as any)(...args);
         if (!result.valid) {
-          expect(result.error).toBeTruthy(`${fn.name} missing Spanish error`);
-          expect(result.errorEn).toBeTruthy(
-            `${fn.name} missing English error`
-          );
+          expect(result.error, `${fn.name} missing Spanish error`).toBeTruthy();
+          expect(result.errorEn, `${fn.name} missing English error`).toBeTruthy();
         }
       });
     });

@@ -62,16 +62,6 @@ describe("LanguageToggle component", () => {
     const buttons = screen.getAllByRole("button");
     expect(buttons.length).toBeGreaterThanOrEqual(2);
 
-    // At least one button should have some indication of being active
-    const hasActiveIndicator = buttons.some((btn) => {
-      return (
-        btn.className.includes("active") ||
-        btn.className.includes("primary") ||
-        btn.getAttribute("aria-pressed") === "true" ||
-        btn.getAttribute("aria-current") === "true"
-      );
-    });
-
     // Should have some visual indicator of current language
     expect(buttons.length).toBeGreaterThan(0);
   });
@@ -113,7 +103,7 @@ describe("LanguageToggle component", () => {
       );
     }
 
-    const { rerender } = render(<TestComponent />);
+    render(<TestComponent />);
 
     const buttons = screen.getAllByRole("button");
     const initialButtonCount = buttons.length;

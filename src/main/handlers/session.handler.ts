@@ -139,7 +139,7 @@ export function registerSessionHandlers(): void {
   });
 
   // Mark session as completed
-  ipcMain.handle("session:markComplete", async (_, sessionId: string, config: unknown) => {
+  ipcMain.handle("session:markComplete", async (_, sessionId: string) => {
     try {
       ensureSessionsDir();
       const filePath = path.join(SESSIONS_DIR, `${sessionId}.json`);
