@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Terminal, AlertTriangle, RefreshCw } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
@@ -22,16 +22,19 @@ export function Installing(): JSX.Element {
   const { language } = useLanguage();
   const logRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
     window.api.install.onProgress((event) => {
+      setIsInitializing(false);
       setInstallProgress(event.percent, event.message, event.log);
     });
 
     window.api.install.onComplete((event) => {
+      setIsInitializing(false);
       setInstallComplete(event.success, event.message, event.dashboardUrl);
       window.api.install.removeListeners();
       if (event.success) {
@@ -41,13 +44,14 @@ export function Installing(): JSX.Element {
 
     const config = buildConfig(language);
     window.api.install.start(config).catch((err) => {
+      setIsInitializing(false);
       setInstallComplete(false, String(err));
     });
 
     return () => {
       window.api.install.removeListeners();
     };
-  }, []);
+  }, [buildConfig, language, setInstallProgress, setInstallComplete, goTo]);
 
   // Auto-scroll log to bottom
   useEffect(() => {
@@ -97,7 +101,7 @@ export function Installing(): JSX.Element {
             {/* Header */}
             <div className="text-center">
               <div className="flex items-center justify-center mb-3">
-                {isInstalling ? (
+                {isInstalling || isInitializing ? (
                   <Loader2 size={32} className="text-primary animate-spin" />
                 ) : (
                   <motion.div
@@ -110,10 +114,18 @@ export function Installing(): JSX.Element {
                 )}
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">
-                {isInstalling ? t(language, "installing.title") : t(language, "installing.almostDone")}
+                {isInitializing
+                  ? t(language, "installing.initializing") || "Inicializando instalación..."
+                  : isInstalling
+                  ? t(language, "installing.title")
+                  : t(language, "installing.almostDone")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {isInstalling ? t(language, "installing.subtitle") : installMessage}
+                {isInitializing
+                  ? t(language, "installing.initializing.subtitle") || "Generando configuración..."
+                  : isInstalling
+                  ? t(language, "installing.subtitle")
+                  : installMessage}
               </p>
             </div>
 

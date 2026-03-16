@@ -155,9 +155,16 @@ export function ChannelCredentials(): JSX.Element {
               </p>
 
               {field.value && validation && !validation.valid && (
-                <p className="text-xs text-destructive">
-                  {language === "es" ? validation.error : validation.errorEn}
-                </p>
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 flex gap-2"
+                >
+                  <span className="text-destructive text-xs leading-none mt-0.5">⚠</span>
+                  <p className="text-xs text-destructive">
+                    {language === "es" ? validation.error : validation.errorEn}
+                  </p>
+                </motion.div>
               )}
             </motion.div>
           );
