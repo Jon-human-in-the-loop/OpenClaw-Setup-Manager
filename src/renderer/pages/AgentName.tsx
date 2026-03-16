@@ -63,7 +63,7 @@ export function AgentName(): JSX.Element {
                 spellCheck={false}
                 className={[
                   "no-drag w-full pl-10 pr-14 py-2.5 rounded-lg bg-muted border text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-colors",
-                  agentName && (!isValid ? "border-destructive/50" : "border-primary/50"),
+                  agentName && (!isValid ? "border-destructive/50 ring-destructive/20" : "border-primary/50"),
                   !agentName && "border-border",
                 ].join(" ")}
               />
@@ -72,9 +72,16 @@ export function AgentName(): JSX.Element {
               </span>
             </div>
             {agentName && !isValid && validation && (
-              <p className="mt-1.5 text-xs text-destructive">
-                {language === "es" ? validation.error : validation.errorEn}
-              </p>
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 flex gap-2"
+              >
+                <span className="text-destructive text-xs leading-none mt-0.5">⚠</span>
+                <p className="text-xs text-destructive">
+                  {language === "es" ? validation.error : validation.errorEn}
+                </p>
+              </motion.div>
             )}
           </div>
 

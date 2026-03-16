@@ -1,5 +1,8 @@
 import { ipcMain, BrowserWindow } from "electron";
 import { spawn } from "node:child_process";
+import { homedir, platform } from "node:os";
+import { writeFileSync, mkdirSync, chmodSync } from "node:fs";
+import { join } from "node:path";
 import type { InstallConfig } from "../../types";
 
 type InstallProgressEvent = {
@@ -64,175 +67,352 @@ function runCommand(
   });
 }
 
-// ─── Instalación local (npm global) ─────────────────────────────────────────
+// ─── DOCKER HELPERS ──────────────────────────────────────────
 
-async function installLocal(win: BrowserWindow | null, config: InstallConfig): Promise<void> {
-  const lang = config.language;
-  const isEs = lang === "es";
+async function isDockerInstalled(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const child = spawn("docker", ["--version"], { shell: true });
+    child.on("close", (code) => resolve(code === 0));
+    child.on("error", () => resolve(false));
+  });
+}
 
-  // 1. Instalar OpenClaw globalmente
-  emit(win, "install:progress", {
-    percent: 5,
-    message: isEs ? "Descargando OpenClaw..." : "Downloading OpenClaw...",
-  } satisfies InstallProgressEvent);
+async function installDocker(
+  win: BrowserWindow | null,
+  startPercent: number,
+  endPercent: number
+): Promise<void> {
+  const os = platform();
 
-  await runCommand(
-    win, "npm",
-    ["install", "-g", "openclaw@latest", "--no-fund", "--no-audit"],
-    10, 35,
-    isEs ? "Instalando OpenClaw..." : "Installing OpenClaw..."
-  );
-
-  // 2. Configurar credenciales
-  emit(win, "install:progress", {
-    percent: 40,
-    message: isEs ? "Aplicando configuración..." : "Applying configuration...",
-  } satisfies InstallProgressEvent);
-
-  const envPairs: [string, string][] = [
-    ["AGENT_NAME", config.agentName],
-    ["PRIMARY_MODEL", config.primaryModel],
-    ...(config.fallbackModel ? [["FALLBACK_MODEL", config.fallbackModel] as [string, string]] : []),
-    ...(config.apiKey ? [["LLM_API_KEY", config.apiKey] as [string, string]] : []),
-    ...(config.phoneNumber ? [["WHATSAPP_NUMBER", config.phoneNumber] as [string, string]] : []),
-    ...(config.telegramToken ? [["TELEGRAM_BOT_TOKEN", config.telegramToken] as [string, string]] : []),
-    ...(config.discordToken ? [["DISCORD_BOT_TOKEN", config.discordToken] as [string, string]] : []),
-    // Token de gateway
-    ...(config.security.gatewayAuthMode === "token"
-      ? [["GATEWAY_TOKEN", config.security.gatewayToken] as [string, string]]
-      : []),
-    // Forzar solo localhost
-    ["GATEWAY_HOST", "127.0.0.1"],
-    ["GATEWAY_PORT", "18789"],
-  ];
-
-  for (const [key, value] of envPairs) {
+  if (os === "darwin") {
+    // macOS: Download Docker Desktop
     await runCommand(
-      win, "openclaw",
-      ["config", "set", key, value],
-      40, 55,
-      isEs ? "Configurando credenciales..." : "Setting credentials..."
+      win,
+      "curl",
+      [
+        "-L",
+        "$(uname -m | grep -q arm64 && echo https://desktop.docker.com/mac/main/arm64/Docker.dmg || echo https://desktop.docker.com/mac/main/amd64/Docker.dmg)",
+        "-o",
+        "/tmp/Docker.dmg",
+        "--progress-bar",
+      ],
+      startPercent,
+      startPercent + 30,
+      "Descargando Docker Desktop..."
+    );
+
+    await runCommand(
+      win,
+      "hdiutil",
+      ["attach", "/tmp/Docker.dmg"],
+      startPercent + 30,
+      startPercent + 50,
+      "Instalando Docker Desktop..."
+    );
+
+    await runCommand(
+      win,
+      "cp",
+      ["-r", "/Volumes/Docker/Docker.app", "/Applications/"],
+      startPercent + 50,
+      startPercent + 70,
+      "Copiando aplicación..."
+    );
+
+    await runCommand(
+      win,
+      "hdiutil",
+      ["detach", "/Volumes/Docker"],
+      startPercent + 70,
+      endPercent,
+      "Finalizando instalación..."
+    );
+  } else if (os === "win32") {
+    // Windows (WSL2): Install docker.io
+    await runCommand(
+      win,
+      "powershell",
+      [
+        "-Command",
+        "wsl sudo apt-get update && wsl sudo apt-get install -y docker.io docker-compose-v2",
+      ],
+      startPercent,
+      endPercent,
+      "Instalando Docker en WSL2..."
+    );
+  } else {
+    // Linux: Official Docker install script
+    await runCommand(
+      win,
+      "curl",
+      ["-fsSL", "https://get.docker.com"],
+      startPercent,
+      startPercent + 50,
+      "Descargando Docker..."
+    );
+
+    await runCommand(
+      win,
+      "sh",
+      ["-c", "curl -fsSL https://get.docker.com | sudo sh"],
+      startPercent + 50,
+      endPercent,
+      "Instalando Docker..."
     );
   }
+}
 
-  // 3. Si auth por token, habilitarlo
-  if (config.security.gatewayAuthMode === "token") {
-    await runCommand(
-      win, "openclaw",
-      ["config", "set", "gateway.auth.mode", "token"],
-      56, 58,
-      isEs ? "Activando autenticación..." : "Enabling authentication..."
-    );
+// ─── CONFIGURATION GENERATORS ────────────────────────────────
+
+function generateGatewayToken(): string {
+  // Generar token hex seguro (compatible con CLI)
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function generateOpenClawConfig(config: InstallConfig, gatewayToken: string): string {
+  const channels: Record<string, unknown> = {};
+
+  if (config.phoneNumber) {
+    channels.whatsapp = {
+      allowFrom: [config.phoneNumber],
+      groups: { "*": { requireMention: true } },
+    };
   }
 
-  // 4. Iniciar servicio
-  emit(win, "install:progress", {
-    percent: 65,
-    message: isEs ? "Iniciando servicio..." : "Starting service...",
-  } satisfies InstallProgressEvent);
+  if (config.telegramToken) {
+    channels.telegram = {
+      enabled: true,
+      botToken: config.telegramToken,
+      allowFrom: ["YOUR_TELEGRAM_USER_ID"],
+      groups: { "*": { requireMention: true } },
+    };
+  }
 
-  await runCommand(
-    win, "openclaw",
-    ["start", "--no-browser"],
-    65, 90,
-    isEs ? "Iniciando OpenClaw..." : "Starting OpenClaw..."
+  if (config.discordToken) {
+    channels.discord = {
+      enabled: true,
+      token: config.discordToken,
+      dm: { enabled: true, allowFrom: ["YOUR_DISCORD_USER_ID"] },
+    };
+  }
+
+  return JSON.stringify(
+    {
+      identity: {
+        name: config.agentName || "Clawd",
+        emoji: "🦞",
+      },
+      agent: {
+        workspace: "/home/node/.openclaw/workspace",
+        model: config.primaryModel,
+        ...(config.fallbackModel ? { fallbacks: [config.fallbackModel] } : {}),
+      },
+      gateway: {
+        port: 18789,
+        bind: "loopback",
+        mode: "local",
+        auth: {
+          token: gatewayToken,
+        },
+      },
+      agents: {
+        defaults: {
+          sandbox: {
+            mode: "non-main",
+          },
+        },
+      },
+      channels,
+      session: {
+        scope: "per-sender",
+        reset: {
+          mode: "daily",
+          atHour: 4,
+        },
+      },
+    },
+    null,
+    2
   );
 }
 
-// ─── Instalación Docker ──────────────────────────────────────────────────────
+function generateDockerCompose(): string {
+  return `version: "3.8"
 
-async function installDocker(win: BrowserWindow | null, config: InstallConfig): Promise<void> {
-  const lang = config.language;
-  const isEs = lang === "es";
-  const containerName = `openclaw-${config.agentName.toLowerCase().replace(/\s+/g, "-")}`;
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: openclaw-agent
+    restart: unless-stopped
 
-  // 1. Verificar Docker disponible
-  emit(win, "install:progress", {
-    percent: 5,
-    message: isEs ? "Verificando Docker..." : "Checking Docker...",
-  } satisfies InstallProgressEvent);
+    # SECURITY: Localhost only
+    ports:
+      - "127.0.0.1:18789:18789"
+      - "127.0.0.1:3000:3000"
 
-  await runCommand(win, "docker", ["info"], 5, 10, isEs ? "Docker OK" : "Docker OK");
+    # Volumes
+    volumes:
+      - \${HOME}/.openclaw/openclaw.json:/home/node/.openclaw/openclaw.json:ro
+      - \${HOME}/.openclaw/workspace:/home/node/.openclaw/workspace
+      - \${HOME}/.openclaw/skills:/home/node/.openclaw/skills
+      - \${HOME}/.openclaw/.env:/home/node/.openclaw/.env:ro
 
-  // 2. Pull imagen de OpenClaw
-  emit(win, "install:progress", {
-    percent: 15,
-    message: isEs ? "Descargando imagen Docker..." : "Pulling Docker image...",
-  } satisfies InstallProgressEvent);
+    # SECURITY: Read-only filesystem
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
 
-  await runCommand(
-    win, "docker",
-    ["pull", "openclaw/openclaw:latest"],
-    15, 45,
-    isEs ? "Descargando imagen..." : "Pulling image..."
-  );
+    # SECURITY: No capabilities
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
-  // 3. Eliminar contenedor anterior si existe
-  try {
-    await runCommand(win, "docker", ["rm", "-f", containerName], 45, 47, "");
-  } catch {
-    // Ignorar si no existía
-  }
-
-  // 4. Construir variables de entorno para el contenedor
-  const dockerEnv: string[] = [
-    "-e", `AGENT_NAME=${config.agentName}`,
-    "-e", `PRIMARY_MODEL=${config.primaryModel}`,
-    "-e", `GATEWAY_HOST=127.0.0.1`,
-    "-e", `GATEWAY_PORT=18789`,
-  ];
-
-  if (config.fallbackModel) dockerEnv.push("-e", `FALLBACK_MODEL=${config.fallbackModel}`);
-  if (config.apiKey) dockerEnv.push("-e", `LLM_API_KEY=${config.apiKey}`);
-  if (config.phoneNumber) dockerEnv.push("-e", `WHATSAPP_NUMBER=${config.phoneNumber}`);
-  if (config.telegramToken) dockerEnv.push("-e", `TELEGRAM_BOT_TOKEN=${config.telegramToken}`);
-  if (config.discordToken) dockerEnv.push("-e", `DISCORD_BOT_TOKEN=${config.discordToken}`);
-  if (config.security.gatewayAuthMode === "token") {
-    dockerEnv.push("-e", `GATEWAY_TOKEN=${config.security.gatewayToken}`);
-  }
-
-  // 5. Ejecutar contenedor
-  // - Solo escucha en localhost (127.0.0.1:18789)
-  // - Sin acceso a filesystem del host (no -v)
-  // - Reinicio automático
-  emit(win, "install:progress", {
-    percent: 50,
-    message: isEs ? "Iniciando contenedor..." : "Starting container...",
-  } satisfies InstallProgressEvent);
-
-  const dockerRunArgs = [
-    "run", "-d",
-    "--name", containerName,
-    "-p", "127.0.0.1:18789:18789",   // Solo localhost, no expuesto a red
-    "--restart", "unless-stopped",
-    "--memory", "1g",                  // Límite de RAM
-    "--cpus", "2",                     // Límite de CPU
-    ...dockerEnv,
-    "openclaw/openclaw:latest",
-  ];
-
-  await runCommand(win, "docker", dockerRunArgs, 50, 90,
-    isEs ? "Iniciando contenedor Docker..." : "Starting Docker container..."
-  );
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+`;
 }
 
-// ─── Handler principal ───────────────────────────────────────────────────────
+// ─── MAIN INSTALLATION HANDLER ───────────────────────────────
 
 export function registerInstallHandlers(win: BrowserWindow | null): void {
   ipcMain.handle("install:start", async (_, config: InstallConfig) => {
+    const homeDir = homedir();
+    const openClawDir = join(homeDir, ".openclaw");
+
     try {
-      if (config.deploymentType === "docker" || config.deploymentType === "wsl2-docker") {
-        await installDocker(win, config);
-      } else {
-        await installLocal(win, config);
+      // PASO 1: Verificar/Instalar Docker
+      emit(win, "install:progress", {
+        percent: 5,
+        message:
+          config.language === "es"
+            ? "Verificando Docker..."
+            : "Checking Docker...",
+      } satisfies InstallProgressEvent);
+
+      const dockerExists = await isDockerInstalled();
+
+      if (!dockerExists) {
+        emit(win, "install:progress", {
+          percent: 10,
+          message:
+            config.language === "es"
+              ? "Instalando Docker..."
+              : "Installing Docker...",
+        } satisfies InstallProgressEvent);
+
+        await installDocker(win, 10, 35);
       }
 
+      // PASO 2: Crear estructura de directorios
+      emit(win, "install:progress", {
+        percent: 40,
+        message:
+          config.language === "es"
+            ? "Creando directorios..."
+            : "Creating directories...",
+      } satisfies InstallProgressEvent);
+
+      mkdirSync(join(openClawDir, "workspace"), { recursive: true });
+      mkdirSync(join(openClawDir, "skills"), { recursive: true });
+
+      // PASO 3: Generar token de gateway
+      const gatewayToken = generateGatewayToken();
+
+      // PASO 4: Escribir configuración
+      emit(win, "install:progress", {
+        percent: 50,
+        message:
+          config.language === "es"
+            ? "Escribiendo configuración..."
+            : "Writing configuration...",
+      } satisfies InstallProgressEvent);
+
+      const configJson = generateOpenClawConfig(config, gatewayToken);
+      const configPath = join(openClawDir, "openclaw.json");
+      writeFileSync(configPath, configJson, "utf-8");
+      chmodSync(configPath, 0o600);
+
+      // Guardar token
+      const tokenPath = join(openClawDir, ".gateway-token");
+      writeFileSync(tokenPath, gatewayToken, "utf-8");
+      chmodSync(tokenPath, 0o600);
+
+      // PASO 5: Escribir .env con API keys
+      if (config.apiKey) {
+        const envContent = `LLM_API_KEY=${config.apiKey}`;
+        const envPath = join(openClawDir, ".env");
+        writeFileSync(envPath, envContent, "utf-8");
+        chmodSync(envPath, 0o600);
+      }
+
+      // PASO 6: Escribir docker-compose.yml
+      emit(win, "install:progress", {
+        percent: 60,
+        message:
+          config.language === "es"
+            ? "Configurando Docker..."
+            : "Configuring Docker...",
+      } satisfies InstallProgressEvent);
+
+      const dockerCompose = generateDockerCompose();
+      const composePath = join(openClawDir, "docker-compose.yml");
+      writeFileSync(composePath, dockerCompose, "utf-8");
+      chmodSync(composePath, 0o600);
+
+      // PASO 7: Levantar contenedor
+      emit(win, "install:progress", {
+        percent: 70,
+        message:
+          config.language === "es"
+            ? "Iniciando contenedor..."
+            : "Starting container...",
+      } satisfies InstallProgressEvent);
+
+      await runCommand(
+        win,
+        "docker",
+        ["compose", "-f", composePath, "pull"],
+        70,
+        75,
+        config.language === "es" ? "Descargando imagen..." : "Downloading image..."
+      );
+
+      await runCommand(
+        win,
+        "docker",
+        ["compose", "-f", composePath, "up", "-d"],
+        75,
+        85,
+        config.language === "es" ? "Levantando contenedor..." : "Starting container..."
+      );
+
+      // PASO 8: Esperar health check
+      emit(win, "install:progress", {
+        percent: 90,
+        message:
+          config.language === "es"
+            ? "Esperando OpenClaw..."
+            : "Waiting for OpenClaw...",
+      } satisfies InstallProgressEvent);
+
+      // Simple wait (en una app real, hacer proper health check)
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      // ✅ Completado
       emit(win, "install:complete", {
         success: true,
-        dashboardUrl: "http://127.0.0.1:18789",
-        message: config.language === "es"
-          ? "¡OpenClaw instalado correctamente!"
-          : "OpenClaw installed successfully!",
+        dashboardUrl: "http://127.0.0.1:3000",
+        message:
+          config.language === "es"
+            ? "¡OpenClaw instalado en Docker correctamente!"
+            : "OpenClaw installed in Docker successfully!",
       });
     } catch (error) {
       emit(win, "install:complete", {

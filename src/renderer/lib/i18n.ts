@@ -77,9 +77,18 @@ const translations = {
   "systemcheck.git": { es: "Git", en: "Git" },
   "systemcheck.git.ok": { es: "Git instalado", en: "Git installed" },
   "systemcheck.git.missing": { es: "Git no encontrado (opcional)", en: "Git not found (optional)" },
+  "systemcheck.ollama": { es: "Ollama", en: "Ollama" },
+  "systemcheck.ollama.ok": { es: "Ollama {version} instalado", en: "Ollama {version} installed" },
+  "systemcheck.ollama.missing": { es: "Ollama no encontrado (opcional)", en: "Ollama not found (optional)" },
+  "systemcheck.docker": { es: "Docker (opcional)", en: "Docker (optional)" },
+  "systemcheck.docker.ok": { es: "Docker {version} corriendo", en: "Docker {version} running" },
+  "systemcheck.docker.installed_not_running": { es: "Docker instalado pero no corriendo", en: "Docker installed but not running" },
+  "systemcheck.docker.missing": { es: "Docker no encontrado (opcional)", en: "Docker not found (optional)" },
   "systemcheck.fix.node": { es: "Descarga Node.js desde nodejs.org", en: "Download Node.js from nodejs.org" },
   "systemcheck.fix.port": { es: "Cierra otros programas o reinicia el sistema", en: "Close other programs or restart the system" },
   "systemcheck.fix.disk": { es: "Libera espacio en disco (necesitas 5GB)", en: "Free up disk space (need 5GB)" },
+  "systemcheck.fix.docker": { es: "Abre Docker Desktop o instálalo desde docker.com", en: "Open Docker Desktop or install it from docker.com" },
+  "systemcheck.fix.ollama": { es: "Descarga Ollama desde ollama.ai para usar modelos locales", en: "Download Ollama from ollama.ai to use local models" },
   "systemcheck.allGood": { es: "¡Todo listo!", en: "All good!" },
   "systemcheck.hasErrors": { es: "Hay problemas que resolver", en: "There are issues to resolve" },
   "systemcheck.continue": { es: "Continuar", en: "Continue" },
@@ -107,6 +116,16 @@ const translations = {
   "model.fallback.desc": { es: "Se usa si el modelo principal falla o no está disponible.", en: "Used if the primary model fails or is unavailable." },
   "model.local.badge": { es: "Local • Gratis", en: "Local • Free" },
   "model.cloud.badge": { es: "Cloud • De pago", en: "Cloud • Paid" },
+  "model.warning.anthropic.title": { es: "⚠️ Riesgo de baneo de cuenta Anthropic", en: "⚠️ Risk of Anthropic account ban" },
+  "model.warning.anthropic.description": { es: "Se han reportado casos de baneos permanentes de cuentas de Anthropic por usar OpenClaw. Usuarios con suscripciones pagadas también han sido afectados.", en: "There have been reports of permanent Anthropic account bans for using OpenClaw. Users with paid subscriptions have also been affected." },
+  "model.warning.anthropic.point1": { es: "Anthropic detecta clientes de terceros que usan contextos de larga duración", en: "Anthropic detects third-party clients using long-duration contexts" },
+  "model.warning.anthropic.point2": { es: "El uso puede violar los Términos de Servicio de Anthropic", en: "Using OpenClaw may violate Anthropic's Terms of Service" },
+  "model.warning.anthropic.point3": { es: "No hay proceso de apelación una vez baneado", en: "No clear appeals process once banned" },
+  "model.warning.gemini.title": { es: "⚠️ Riesgo de baneo de cuenta Google", en: "⚠️ Risk of Google account ban" },
+  "model.warning.gemini.description": { es: "Múltiples usuarios han reportado baneos permanentes de cuentas de Google por integrar Gemini con OpenClaw. Esto afecta toda la cuenta, incluyendo Gmail y Drive.", en: "Multiple users report permanent Google account bans for integrating Gemini with OpenClaw. This affects entire account including Gmail and Drive." },
+  "model.warning.gemini.point1": { es: "El baneo afecta toda la cuenta Google, no solo Gemini", en: "Ban affects entire Google account, not just Gemini" },
+  "model.warning.gemini.point2": { es: "Cuentas antiguas y premium también han sido baneadas", en: "Old accounts and premium accounts have been banned" },
+  "model.warning.gemini.point3": { es: "Error típico: 'Gemini has been disabled for violation of Terms of Service'", en: "Typical error: 'Gemini has been disabled for violation of Terms of Service'" },
 
   // ── API Key ───────────────────────────────────────────────────────────────
   "apikey.title": { es: "Ingresa tu API Key", en: "Enter your API Key" },
@@ -134,6 +153,8 @@ const translations = {
   "channels.slack.desc": { es: "Integra tu agente en tu workspace de Slack", en: "Integrate your agent in your Slack workspace" },
   "channels.none": { es: "Sin canal (solo API local)", en: "No channel (local API only)" },
   "channels.none.desc": { es: "Accede al agente solo vía API en localhost", en: "Access the agent only via API on localhost" },
+  "channels.warning.title": { es: "Sin canales configurados", en: "No channels configured" },
+  "channels.warning.desc": { es: "Tu agente funcionará pero no podrás interactuar con él desde WhatsApp, Telegram, Discord o Slack. Podrás acceder solo a través del dashboard.", en: "Your agent will run but you won't be able to interact with it from WhatsApp, Telegram, Discord, or Slack. You can only access it through the dashboard." },
 
   // ── Channel Credentials ───────────────────────────────────────────────────
   "credentials.title": { es: "Credenciales de canales", en: "Channel credentials" },
@@ -237,6 +258,10 @@ const translations = {
   "installing.step.docker.pull": { es: "Descargando imagen Docker...", en: "Pulling Docker image..." },
   "installing.step.docker.run": { es: "Iniciando contenedor...", en: "Starting container..." },
   "installing.step.docker.config": { es: "Configurando contenedor...", en: "Configuring container..." },
+
+  // ── Installing — Inicialización ───────────────────────────────────────────
+  "installing.initializing": { es: "Inicializando instalación", en: "Initializing installation" },
+  "installing.initializing.subtitle": { es: "Preparando configuración...", en: "Preparing configuration..." },
 } as const;
 
 type TranslationKey = keyof typeof translations;

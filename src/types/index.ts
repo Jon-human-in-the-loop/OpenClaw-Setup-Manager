@@ -95,6 +95,8 @@ export interface SystemCheckResult {
   diskSpaceGB: number;
   diskSpaceMeetsRequirement: boolean;
   gitInstalled: boolean;
+  ollamaInstalled: boolean;
+  ollamaVersion: string | null;
   platform: string;
   arch: string;
   /** Capacidades de plataforma incluyendo Docker */

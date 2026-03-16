@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Network access for downloading Docker and OpenClaw -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+
+  <!-- Allow running subprocesses (for Docker, shell commands) -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- File system access for ~/.openclaw directory -->
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+  <key>com.apple.security.files.downloads.read-write</key>
+  <true/>
+
+  <!-- Camera and Microphone (not required, but declared) -->
+  <key>NSCameraUsageDescription</key>
+  <string>OpenClaw does not require camera access</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>OpenClaw does not require microphone access</string>
+
+  <!-- Allow Electron to function properly -->
+  <key>com.apple.security.cs.debugger</key>
+  <false/>
+  <key>com.apple.security.cs.allow-jit</key>
+  <false/>
+</dict>
+</plist>

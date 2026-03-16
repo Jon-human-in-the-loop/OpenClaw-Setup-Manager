@@ -20,7 +20,7 @@ export function ApiKey(): JSX.Element {
 
   const validation = apiKey.trim() ? validateApiKey(apiKey.trim(), providerId) : null;
   const isValid = validation?.valid ?? false;
-  const canContinue = apiKey.trim().length > 0;
+  const canContinue = isValid;
 
   const guideKey = `apikey.guide.${providerId}` as "apikey.guide.anthropic" | "apikey.guide.openai" | "apikey.guide.google";
   const apiKeyUrl = provider?.apiKeyUrl;
@@ -86,9 +86,16 @@ export function ApiKey(): JSX.Element {
 
             {/* Validation message */}
             {apiKey && !isValid && validation && (
-              <p className="mt-1.5 text-xs text-destructive">
-                {language === "es" ? validation.error : validation.errorEn}
-              </p>
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-2 p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 flex gap-2"
+              >
+                <span className="text-destructive text-xs leading-none mt-0.5">⚠</span>
+                <p className="text-xs text-destructive">
+                  {language === "es" ? validation.error : validation.errorEn}
+                </p>
+              </motion.div>
             )}
           </div>
 

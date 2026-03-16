@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Terminal, AlertTriangle, RefreshCw } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
@@ -22,16 +22,19 @@ export function Installing(): JSX.Element {
   const { language } = useLanguage();
   const logRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     if (startedRef.current) return;
     startedRef.current = true;
 
     window.api.install.onProgress((event) => {
+      setIsInitializing(false);
       setInstallProgress(event.percent, event.message, event.log);
     });
 
     window.api.install.onComplete((event) => {
+      setIsInitializing(false);
       setInstallComplete(event.success, event.message, event.dashboardUrl);
       window.api.install.removeListeners();
       if (event.success) {
@@ -41,13 +44,14 @@ export function Installing(): JSX.Element {
 
     const config = buildConfig(language);
     window.api.install.start(config).catch((err) => {
+      setIsInitializing(false);
       setInstallComplete(false, String(err));
     });
 
     return () => {
       window.api.install.removeListeners();
     };
-  }, []);
+  }, [buildConfig, language, setInstallProgress, setInstallComplete, goTo]);
 
   // Auto-scroll log to bottom
   useEffect(() => {
@@ -72,24 +76,35 @@ export function Installing(): JSX.Element {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center text-center gap-4"
+            className="flex flex-col items-center text-center gap-4 max-w-sm"
           >
             <div className="w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
               <AlertTriangle size={24} className="text-destructive" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground mb-1">
+              <h2 className="text-lg font-bold text-foreground mb-2">
                 {t(language, "installing.error.title")}
               </h2>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">{errorMessage}</p>
+              <p className="text-sm text-muted-foreground mb-4">{errorMessage}</p>
+              {installLog.length > 0 && (
+                <div className="p-3 bg-black/40 rounded-lg border border-border text-left max-h-40 overflow-y-auto mb-4">
+                  {installLog.slice(-5).map((line, i) => (
+                    <p key={i} className="text-[10px] font-mono text-muted-foreground leading-4">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
-            <button
-              onClick={handleRetry}
-              className="no-drag flex items-center gap-2 px-5 py-2.5 bg-muted text-foreground text-sm font-medium rounded-lg hover:bg-muted/80 transition-colors"
-            >
-              <RefreshCw size={14} />
-              {t(language, "installing.error.retry")}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleRetry}
+                className="no-drag flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <RefreshCw size={14} />
+                {t(language, "installing.error.retry")}
+              </button>
+            </div>
           </motion.div>
         ) : (
           /* Installing / success state */
@@ -97,7 +112,7 @@ export function Installing(): JSX.Element {
             {/* Header */}
             <div className="text-center">
               <div className="flex items-center justify-center mb-3">
-                {isInstalling ? (
+                {isInstalling || isInitializing ? (
                   <Loader2 size={32} className="text-primary animate-spin" />
                 ) : (
                   <motion.div
@@ -110,10 +125,18 @@ export function Installing(): JSX.Element {
                 )}
               </div>
               <h2 className="text-lg font-bold text-foreground mb-1">
-                {isInstalling ? t(language, "installing.title") : t(language, "installing.almostDone")}
+                {isInitializing
+                  ? t(language, "installing.initializing")
+                  : isInstalling
+                  ? t(language, "installing.title")
+                  : t(language, "installing.almostDone")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {isInstalling ? t(language, "installing.subtitle") : installMessage}
+                {isInitializing
+                  ? t(language, "installing.initializing.subtitle")
+                  : isInstalling
+                  ? t(language, "installing.subtitle")
+                  : installMessage}
               </p>
             </div>
 

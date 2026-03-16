@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, AlertCircle } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
@@ -41,6 +41,24 @@ export function Channels(): JSX.Element {
         <p className="text-sm text-muted-foreground mb-5">
           {t(language, "channels.subtitle")}
         </p>
+
+        {channels.has("none") && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 p-3.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg flex gap-3"
+          >
+            <AlertCircle size={16} className="text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-amber-900 dark:text-amber-100">
+              <p className="font-medium mb-1">
+                {t(language, "channels.warning.title")}
+              </p>
+              <p className="text-xs opacity-90">
+                {t(language, "channels.warning.desc")}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         <div className="space-y-2.5">
           {CHANNEL_OPTIONS.map((opt, i) => {

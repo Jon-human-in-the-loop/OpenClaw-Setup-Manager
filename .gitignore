@@ -7,11 +7,14 @@ node_modules/
 out/
 dist/
 dist-electron/
-
-# Build resources (keep icons and assets, ignore generated)
-!build/
-build/*.bmp
+# Keep icon assets and macOS entitlements in build/
+build/*
+!build/icons/
+!build/icon.ico
+!build/icon.icns
+!build/icon.png
 !build/installer-header.bmp
+!build/entitlements.mac.plist
 
 # Logs
 *.log
