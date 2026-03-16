@@ -174,6 +174,69 @@ const translations = {
   "success.agent.channels": { es: "Canales", en: "Channels" },
   "success.agent.url": { es: "Dashboard URL", en: "Dashboard URL" },
   "success.tip": { es: "Tip: El agente se inicia automáticamente con tu computadora.", en: "Tip: The agent starts automatically with your computer." },
+
+  // ── Deployment ────────────────────────────────────────────────────────────
+  "deployment.title": { es: "Elige tu entorno de instalación", en: "Choose your installation environment" },
+  "deployment.subtitle": { es: "El entorno determina el nivel de seguridad y aislamiento de OpenClaw.", en: "The environment determines the security and isolation level of OpenClaw." },
+  "deployment.platform": { es: "Tu sistema", en: "Your system" },
+
+  // Local
+  "deployment.local.title": { es: "Instalación local directa", en: "Direct local install" },
+  "deployment.local.desc": { es: "Instala OpenClaw en tu sistema usando npm. Rápido y sencillo, sin dependencias extra.", en: "Install OpenClaw on your system using npm. Fast and simple, no extra dependencies." },
+  "deployment.local.desc.windows": { es: "Opción recomendada para Windows. Instala directamente con npm, sin Docker. Funciona en todas las versiones de Windows.", en: "Recommended option for Windows. Installs directly with npm, no Docker. Works on all Windows versions." },
+  "deployment.local.badge.windows": { es: "Recomendado para Windows", en: "Recommended for Windows" },
+  "deployment.local.warning": { es: "OpenClaw correrá directamente en tu sistema. Asegúrate de no ejecutarlo con privilegios de administrador.", en: "OpenClaw will run directly on your system. Make sure not to run it with administrator privileges." },
+  "deployment.local.warning.windows": { es: "Para mayor seguridad, no ejecutes como Administrador. Guarda tus API keys en variables de entorno, no en archivos de texto.", en: "For better security, don't run as Administrator. Store your API keys as environment variables, not in text files." },
+
+  // Docker
+  "deployment.docker.title": { es: "Contenedor Docker", en: "Docker container" },
+  "deployment.docker.desc": { es: "Ejecuta OpenClaw dentro de un contenedor aislado. Recomendado para mayor seguridad: el agente no tiene acceso directo a tu sistema.", en: "Run OpenClaw inside an isolated container. Recommended for better security: the agent has no direct access to your system." },
+  "deployment.docker.badge": { es: "Recomendado — Mayor seguridad", en: "Recommended — Better security" },
+  "deployment.docker.missing.title": { es: "Docker no está instalado", en: "Docker is not installed" },
+  "deployment.docker.missing.desc": { es: "Para usar esta opción, instala Docker Desktop primero. Es gratuito y tarda unos minutos.", en: "To use this option, install Docker Desktop first. It's free and takes a few minutes." },
+  "deployment.docker.missing.link": { es: "Instalar Docker →", en: "Install Docker →" },
+  "deployment.docker.notrunning": { es: "Docker está instalado pero no está activo. Ábrelo antes de continuar (busca Docker Desktop en tus aplicaciones).", en: "Docker is installed but not running. Open it before continuing (look for Docker Desktop in your applications)." },
+
+  // WSL2
+  "deployment.wsl2.title": { es: "WSL2 + Docker (Windows avanzado)", en: "WSL2 + Docker (Advanced Windows)" },
+  "deployment.wsl2.desc": { es: "Usa el subsistema Linux de Windows para correr OpenClaw en un contenedor Docker real. Mayor seguridad que la instalación local, pero requiere más configuración.", en: "Use Windows Subsystem for Linux to run OpenClaw in a real Docker container. Better security than local install, but requires more setup." },
+  "deployment.wsl2.badge": { es: "Avanzado", en: "Advanced" },
+  "deployment.wsl2.warning": { es: "Esta opción requiere que Docker Desktop esté corriendo con la integración de WSL2 habilitada. Ve a Docker Desktop → Settings → Resources → WSL Integration.", en: "This option requires Docker Desktop running with WSL2 integration enabled. Go to Docker Desktop → Settings → Resources → WSL Integration." },
+
+  // ── Security Setup ────────────────────────────────────────────────────────
+  "security.title": { es: "Configuración de seguridad", en: "Security setup" },
+  "security.subtitle": { es: "Protege tu instalación de OpenClaw con estas configuraciones esenciales.", en: "Protect your OpenClaw installation with these essential settings." },
+
+  "security.item.localhost.title": { es: "Solo localhost", en: "Localhost only" },
+  "security.item.localhost.desc": { es: "Gateway ligado a 127.0.0.1, nunca expuesto a internet.", en: "Gateway bound to 127.0.0.1, never exposed to the internet." },
+  "security.item.isolation.title": { es: "Aislamiento", en: "Isolation" },
+  "security.item.isolation.docker": { es: "Contenedor Docker aislado del sistema host.", en: "Docker container isolated from the host system." },
+  "security.item.isolation.local": { es: "Instalación local. Evita ejecutar como root/administrador.", en: "Local install. Avoid running as root/administrator." },
+  "security.item.auth.title": { es: "Autenticación", en: "Authentication" },
+  "security.item.auth.desc": { es: "Token de acceso para el gateway configurado.", en: "Access token for the gateway configured." },
+  "security.item.update.title": { es: "Actualizaciones", en: "Updates" },
+  "security.item.update.desc": { es: "Mantén OpenClaw actualizado para recibir parches de seguridad.", en: "Keep OpenClaw updated to receive security patches." },
+
+  "security.token.title": { es: "Token de acceso al gateway", en: "Gateway access token" },
+  "security.token.enable": { es: "Activar", en: "Enable" },
+  "security.token.desc": { es: "Este token protege el dashboard y la API de OpenClaw. Guárdalo en un lugar seguro.", en: "This token protects the OpenClaw dashboard and API. Store it in a safe place." },
+  "security.token.regenerate": { es: "Generar nuevo token", en: "Generate new token" },
+  "security.token.ok": { es: "Token válido", en: "Valid token" },
+  "security.token.disabled.warning": { es: "⚠️ Sin token de acceso cualquier persona en tu red local puede controlar tu agente. No recomendado.", en: "⚠️ Without an access token, anyone on your local network can control your agent. Not recommended." },
+
+  "security.note.title": { es: "Buenas prácticas", en: "Best practices" },
+  "security.note.desc": { es: "OpenClaw corre solo en localhost. Usa SSH tunneling o Tailscale si necesitas acceso remoto. Nunca expongas el puerto 18789 directamente a internet.", en: "OpenClaw runs only on localhost. Use SSH tunneling or Tailscale for remote access. Never expose port 18789 directly to the internet." },
+
+  // ── Welcome stats ─────────────────────────────────────────────────────────
+  "welcome.stats.stars":     { es: "GitHub Stars", en: "GitHub Stars" },
+  "welcome.stats.skills":    { es: "Skills Curadas", en: "Curated Skills" },
+  "welcome.stats.channels":  { es: "Canales", en: "Channels" },
+  "welcome.stats.providers": { es: "Proveedores IA", en: "AI Providers" },
+
+  // ── Installing — pasos Docker ─────────────────────────────────────────────
+  "installing.step.docker.pull": { es: "Descargando imagen Docker...", en: "Pulling Docker image..." },
+  "installing.step.docker.run": { es: "Iniciando contenedor...", en: "Starting container..." },
+  "installing.step.docker.config": { es: "Configurando contenedor...", en: "Configuring container..." },
 } as const;
 
 type TranslationKey = keyof typeof translations;

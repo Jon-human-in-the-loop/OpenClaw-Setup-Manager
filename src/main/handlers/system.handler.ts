@@ -2,19 +2,9 @@ import { ipcMain } from "electron";
 import { execSync } from "node:child_process";
 import net from "node:net";
 import os from "node:os";
+import type { SystemCheckResult, DockerInfo, PlatformCapabilities, DeploymentType } from "../../types";
 
-
-export interface SystemCheckResult {
-  nodeInstalled: boolean;
-  nodeVersion: string | null;
-  nodeMeetsRequirement: boolean;
-  portAvailable: boolean;
-  diskSpaceGB: number;
-  diskSpaceMeetsRequirement: boolean;
-  gitInstalled: boolean;
-  platform: NodeJS.Platform;
-  arch: string;
-}
+// ─── Node.js ────────────────────────────────────────────────────────────────
 
 function getNodeVersion(): { installed: boolean; version: string | null; meetsRequirement: boolean } {
   try {
@@ -27,6 +17,8 @@ function getNodeVersion(): { installed: boolean; version: string | null; meetsRe
   }
 }
 
+// ─── Puerto ──────────────────────────────────────────────────────────────────
+
 function checkPort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = net.createServer();
@@ -37,6 +29,8 @@ function checkPort(port: number): Promise<boolean> {
     server.listen(port, "127.0.0.1");
   });
 }
+
+// ─── Disco ───────────────────────────────────────────────────────────────────
 
 function getDiskSpaceGB(): number {
   try {
@@ -57,9 +51,11 @@ function getDiskSpaceGB(): number {
       return Math.floor(freeKB / (1024 ** 2));
     }
   } catch {
-    return 100; // assume enough if can't check
+    return 100;
   }
 }
+
+// ─── Git ─────────────────────────────────────────────────────────────────────
 
 function isGitInstalled(): boolean {
   try {
@@ -70,11 +66,114 @@ function isGitInstalled(): boolean {
   }
 }
 
+// ─── Docker ──────────────────────────────────────────────────────────────────
+
+function getDockerInfo(): DockerInfo {
+  const isNative = process.platform === "linux";
+
+  // 1. ¿Está instalado?
+  let installed = false;
+  let version: string | undefined;
+  try {
+    const raw = execSync("docker --version", { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"] }).trim();
+    installed = true;
+    // "Docker version 24.0.7, build afdd53b"
+    const m = raw.match(/version\s+([\d.]+)/i);
+    version = m ? m[1] : raw;
+  } catch {
+    installed = false;
+  }
+
+  if (!installed) {
+    return { installed: false, running: false, isNative };
+  }
+
+  // 2. ¿Está corriendo (daemon activo)?
+  let running = false;
+  try {
+    execSync("docker info", { stdio: "ignore", timeout: 5000 });
+    running = true;
+  } catch {
+    running = false;
+  }
+
+  return { installed, running, version, isNative };
+}
+
+// ─── WSL2 (solo Windows) ─────────────────────────────────────────────────────
+
+function checkWSL2(): boolean {
+  if (process.platform !== "win32") return false;
+  try {
+    const out = execSync("wsl --status", { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"], timeout: 5000 });
+    // Si no lanza error y contiene algún texto de versión, WSL2 está disponible
+    return out.toLowerCase().includes("wsl") || out.trim().length > 0;
+  } catch {
+    try {
+      // Fallback: intenta listar distros
+      execSync("wsl -l -v", { stdio: "ignore", timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+// ─── Capacidades de Plataforma ───────────────────────────────────────────────
+
+function getPlatformCapabilities(): PlatformCapabilities {
+  const os_platform = process.platform;
+  const docker = getDockerInfo();
+  const wsl2Available = checkWSL2();
+
+  let availableDeployments: DeploymentType[] = ["local"];
+  let recommendedDeployment: DeploymentType = "local";
+
+  if (os_platform === "linux" || os_platform === "darwin") {
+    // macOS y Linux: Docker es una opción real
+    if (docker.installed && docker.running) {
+      availableDeployments = ["local", "docker"];
+      // En Linux preferimos Docker por seguridad; en macOS es conveniente también
+      recommendedDeployment = "docker";
+    } else if (docker.installed && !docker.running) {
+      // Docker instalado pero no activo: aún lo ofrecemos, avisamos que hay que iniciarlo
+      availableDeployments = ["local", "docker"];
+      recommendedDeployment = "docker";
+    } else {
+      // Docker no instalado: solo local, pero ofrecemos instalarlo
+      availableDeployments = ["local"];
+      recommendedDeployment = "local";
+    }
+  } else if (os_platform === "win32") {
+    // Windows: local es el principal
+    availableDeployments = ["local"];
+    recommendedDeployment = "local";
+
+    if (wsl2Available) {
+      availableDeployments.push("wsl2-docker");
+      // En Windows no cambiamos la recomendación: local sigue siendo la opción
+      // principal para usuarios no técnicos; WSL2 es "avanzado"
+    }
+  }
+
+  return {
+    os: os_platform,
+    arch: process.arch,
+    docker,
+    wsl2Available,
+    availableDeployments,
+    recommendedDeployment,
+  };
+}
+
+// ─── Handler ─────────────────────────────────────────────────────────────────
+
 export function registerSystemHandlers(): void {
   ipcMain.handle("system:check", async (): Promise<SystemCheckResult> => {
     const node = getNodeVersion();
-    const [portAvailable] = await Promise.all([checkPort(18789)]);
+    const portAvailable = await checkPort(18789);
     const diskSpaceGB = getDiskSpaceGB();
+    const platformCapabilities = getPlatformCapabilities();
 
     return {
       nodeInstalled: node.installed,
@@ -86,6 +185,7 @@ export function registerSystemHandlers(): void {
       gitInstalled: isGitInstalled(),
       platform: process.platform,
       arch: process.arch,
+      platformCapabilities,
     };
   });
 

@@ -20,7 +20,7 @@ interface CheckItem {
 }
 
 export function SystemCheck(): JSX.Element {
-  const { goNext, goPrev } = useInstallation();
+  const { goNext, goPrev, setPlatformCapabilities } = useInstallation();
   const { language } = useLanguage();
   const [checking, setChecking] = useState(true);
   const [result, setResult] = useState<SystemCheckResult | null>(null);
@@ -33,6 +33,10 @@ export function SystemCheck(): JSX.Element {
       const res = await window.api.system.check();
       setResult(res);
       buildItems(res);
+      // Pasar capabilities al contexto para que Deployment las use
+      if (res.platformCapabilities) {
+        setPlatformCapabilities(res.platformCapabilities);
+      }
     } catch (e) {
       console.error(e);
     } finally {
