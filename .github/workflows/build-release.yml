@@ -26,17 +26,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Enable corepack
-        run: corepack enable && corepack prepare pnpm@10.4.1 --activate
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npx pnpm@10.4.1 install --frozen-lockfile
 
       - name: Build application
-        run: pnpm build
+        run: npx pnpm@10.4.1 build
 
       - name: Build Linux installers
-        run: npx electron-builder --linux --publish never
+        run: npx pnpm@10.4.1 exec electron-builder --linux --publish never
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v5
@@ -57,17 +54,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Enable corepack
-        run: corepack enable && corepack prepare pnpm@10.4.1 --activate
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npx pnpm@10.4.1 install --frozen-lockfile
 
       - name: Build application
-        run: pnpm build
+        run: npx pnpm@10.4.1 build
 
       - name: Build Windows installer
-        run: npx electron-builder --win --publish never
+        run: npx pnpm@10.4.1 exec electron-builder --win --publish never
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v5
@@ -88,17 +82,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Enable corepack
-        run: corepack enable && corepack prepare pnpm@10.4.1 --activate
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npx pnpm@10.4.1 install --frozen-lockfile
 
       - name: Build application
-        run: pnpm build
+        run: npx pnpm@10.4.1 build
 
       - name: Build macOS installer
-        run: npx electron-builder --mac --publish never
+        run: npx pnpm@10.4.1 exec electron-builder --mac --publish never
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v5
