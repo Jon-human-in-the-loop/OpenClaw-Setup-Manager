@@ -140,3 +140,46 @@ export interface AppVersion {
   previous?: string;
   lastUpdateTime?: number;
 }
+
+// ─── Installation Session (Resume) ────────────────────────────────────────
+
+export type InstallationSessionStatus = "active" | "completed" | "failed" | "interrupted";
+
+export interface InstallationSession {
+  // Identifiers
+  sessionId: string;
+  createdAt: number; // timestamp
+  lastModifiedAt: number;
+
+  // Status
+  status: InstallationSessionStatus;
+  failureReason?: string;
+
+  // Configuration snapshot
+  currentStep: WizardStep;
+  setupType: SetupType;
+  language: Language;
+  agentName: string;
+  primaryModel: string;
+  fallbackModel?: string;
+  apiKey?: string;
+  channels: string[];
+  phoneNumber?: string;
+  telegramToken?: string;
+  discordToken?: string;
+  slackToken?: string;
+
+  // Progress tracking
+  completedSteps: WizardStep[];
+  installationStartTime?: number;
+  installationProgress: {
+    percent: number;
+    currentLog: string;
+    logs: string[];
+  };
+}
+
+export interface InstallationHistory {
+  sessions: InstallationSession[];
+  totalCount: number;
+}

@@ -5,6 +5,7 @@ import { registerSystemHandlers } from "./handlers/system.handler";
 import { registerInstallHandlers } from "./handlers/install.handler";
 import { registerConfigHandlers } from "./handlers/config.handler";
 import { registerUpdateHandlers, configureAutoUpdater } from "./handlers/update.handler";
+import { registerSessionHandlers, cleanupOldSessions } from "./handlers/session.handler";
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -61,11 +62,15 @@ app.whenReady().then(() => {
   registerInstallHandlers(mainWindow);
   registerConfigHandlers();
   registerUpdateHandlers();
+  registerSessionHandlers();
 
   createWindow();
 
   // Configure auto-updater after window is ready
   configureAutoUpdater();
+
+  // Cleanup old sessions (30+ days)
+  cleanupOldSessions();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -8,6 +8,8 @@ import type {
   UpdateProgressEvent,
   UpdateErrorEvent,
   UpdateInfo,
+  InstallationSession,
+  InstallationHistory,
 } from "../types";
 
 // Expose a safe, typed API to the renderer via window.api
@@ -81,6 +83,26 @@ const api = {
       ipcRenderer.removeAllListeners("update:progress");
       ipcRenderer.removeAllListeners("update:error");
     },
+  },
+
+  // Installation sessions (resume feature)
+  session: {
+    create: (): Promise<InstallationSession> =>
+      ipcRenderer.invoke("session:create"),
+    save: (session: InstallationSession): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("session:save", session),
+    loadActive: (): Promise<InstallationSession | null> =>
+      ipcRenderer.invoke("session:loadActive"),
+    get: (sessionId: string): Promise<InstallationSession | null> =>
+      ipcRenderer.invoke("session:get", sessionId),
+    list: (): Promise<InstallationHistory> =>
+      ipcRenderer.invoke("session:list"),
+    delete: (sessionId: string): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("session:delete", sessionId),
+    markComplete: (sessionId: string, config: unknown): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("session:markComplete", sessionId, config),
+    clearActive: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("session:clearActive"),
   },
 } as const;
 
