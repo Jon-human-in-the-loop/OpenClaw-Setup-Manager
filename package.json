@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Easy installer for OpenClaw — guided setup for non-technical users",
   "main": "out/main/index.js",
-  "author": "OpenClaw",
+  "homepage": "https://github.com/Jon-human-in-the-loop/openclaw-easy-installer-electron",
+  "author": {
+    "name": "OpenClaw",
+    "email": "openclaw@users.noreply.github.com"
+  },
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
