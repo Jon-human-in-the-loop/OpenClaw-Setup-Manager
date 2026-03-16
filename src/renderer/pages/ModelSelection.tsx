@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, ChevronLeft, HelpCircle } from "lucide-react";
+import { ChevronRight, ChevronLeft, HelpCircle, AlertTriangle } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
@@ -102,7 +102,7 @@ export function ModelSelection(): JSX.Element {
         </div>
 
         {/* Local vs Cloud badge */}
-        <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+        <div className="flex items-center gap-2 p-3 bg-muted rounded-lg mb-4">
           <HelpCircle size={14} className="text-muted-foreground shrink-0" />
           <p className="text-xs text-muted-foreground">
             {provider.requiresApiKey
@@ -110,6 +110,58 @@ export function ModelSelection(): JSX.Element {
               : t(language, "model.local.badge")}
           </p>
         </div>
+
+        {/* Anthropic Ban Risk Warning */}
+        {activeProvider === "anthropic" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3.5 rounded-lg border border-red-500/50 bg-red-950/20 mb-4"
+          >
+            <div className="flex gap-3 items-start">
+              <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-1.5">
+                  {t(language, "model.warning.anthropic.title")}
+                </h4>
+                <p className="text-xs text-red-300/90 leading-relaxed mb-2">
+                  {t(language, "model.warning.anthropic.description")}
+                </p>
+                <ul className="text-xs text-red-300/70 space-y-1">
+                  <li>• {t(language, "model.warning.anthropic.point1")}</li>
+                  <li>• {t(language, "model.warning.anthropic.point2")}</li>
+                  <li>• {t(language, "model.warning.anthropic.point3")}</li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Google Gemini Ban Risk Warning */}
+        {activeProvider === "google" && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3.5 rounded-lg border border-red-500/50 bg-red-950/20 mb-4"
+          >
+            <div className="flex gap-3 items-start">
+              <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-1.5">
+                  {t(language, "model.warning.gemini.title")}
+                </h4>
+                <p className="text-xs text-red-300/90 leading-relaxed mb-2">
+                  {t(language, "model.warning.gemini.description")}
+                </p>
+                <ul className="text-xs text-red-300/70 space-y-1">
+                  <li>• {t(language, "model.warning.gemini.point1")}</li>
+                  <li>• {t(language, "model.warning.gemini.point2")}</li>
+                  <li>• {t(language, "model.warning.gemini.point3")}</li>
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Navigation */}

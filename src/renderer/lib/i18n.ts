@@ -116,6 +116,16 @@ const translations = {
   "model.fallback.desc": { es: "Se usa si el modelo principal falla o no está disponible.", en: "Used if the primary model fails or is unavailable." },
   "model.local.badge": { es: "Local • Gratis", en: "Local • Free" },
   "model.cloud.badge": { es: "Cloud • De pago", en: "Cloud • Paid" },
+  "model.warning.anthropic.title": { es: "⚠️ Riesgo de baneo de cuenta Anthropic", en: "⚠️ Risk of Anthropic account ban" },
+  "model.warning.anthropic.description": { es: "Se han reportado casos de baneos permanentes de cuentas de Anthropic por usar OpenClaw. Usuarios con suscripciones pagadas también han sido afectados.", en: "There have been reports of permanent Anthropic account bans for using OpenClaw. Users with paid subscriptions have also been affected." },
+  "model.warning.anthropic.point1": { es: "Anthropic detecta clientes de terceros que usan contextos de larga duración", en: "Anthropic detects third-party clients using long-duration contexts" },
+  "model.warning.anthropic.point2": { es: "El uso puede violar los Términos de Servicio de Anthropic", en: "Using OpenClaw may violate Anthropic's Terms of Service" },
+  "model.warning.anthropic.point3": { es: "No hay proceso de apelación una vez baneado", en: "No clear appeals process once banned" },
+  "model.warning.gemini.title": { es: "⚠️ Riesgo de baneo de cuenta Google", en: "⚠️ Risk of Google account ban" },
+  "model.warning.gemini.description": { es: "Múltiples usuarios han reportado baneos permanentes de cuentas de Google por integrar Gemini con OpenClaw. Esto afecta toda la cuenta, incluyendo Gmail y Drive.", en: "Multiple users report permanent Google account bans for integrating Gemini with OpenClaw. This affects entire account including Gmail and Drive." },
+  "model.warning.gemini.point1": { es: "El baneo afecta toda la cuenta Google, no solo Gemini", en: "Ban affects entire Google account, not just Gemini" },
+  "model.warning.gemini.point2": { es: "Cuentas antiguas y premium también han sido baneadas", en: "Old accounts and premium accounts have been banned" },
+  "model.warning.gemini.point3": { es: "Error típico: 'Gemini has been disabled for violation of Terms of Service'", en: "Typical error: 'Gemini has been disabled for violation of Terms of Service'" },
 
   // ── API Key ───────────────────────────────────────────────────────────────
   "apikey.title": { es: "Ingresa tu API Key", en: "Enter your API Key" },
