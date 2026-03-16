@@ -3,11 +3,13 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 import type { SetupType, InstallConfig, DeploymentType, PlatformCapabilities, SecurityConfig } from "../../types";
 import { getDefaultModelForSetupType } from "../lib/models";
 import { generateGatewayToken } from "../lib/security";
+import { saveInstallationState, loadInstallationState, clearInstallationState } from "../lib/persistence";
 
 export type WizardStep =
   | "welcome"
@@ -121,8 +123,8 @@ interface InstallationContextValue extends InstallationState {
 
 const InstallationContext = createContext<InstallationContextValue | null>(null);
 
-export function InstallationProvider({ children }: { children: ReactNode }): JSX.Element {
-  const [state, setState] = useState<InstallationState>({
+function getInitialState(): InstallationState {
+  const defaultState: InstallationState = {
     step: "welcome",
     stepIndex: 0,
 
@@ -152,7 +154,34 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
     installSuccess: null,
     dashboardUrl: "",
     errorMessage: "",
-  });
+  };
+
+  const savedState = loadInstallationState();
+  if (!savedState) return defaultState;
+
+  return {
+    ...defaultState,
+    step: (savedState.step as WizardStep) || "welcome",
+    stepIndex: savedState.stepIndex || 0,
+    deploymentType: (savedState.deploymentType as DeploymentType) || "local",
+    setupType: (savedState.setupType as SetupType) || "cloud",
+    agentName: savedState.agentName || "Clawd",
+    agentEmoji: savedState.agentEmoji || "🦞",
+    primaryModel: savedState.primaryModel || "anthropic/claude-sonnet-4-5",
+    fallbackModel: savedState.fallbackModel,
+    apiKey: savedState.apiKey || "",
+    channels: new Set(savedState.channels || ["whatsapp"]),
+    phoneNumber: savedState.phoneNumber || "",
+    telegramToken: savedState.telegramToken || "",
+    discordToken: savedState.discordToken || "",
+    slackToken: savedState.slackToken || "",
+    gatewayToken: savedState.gatewayToken || generateGatewayToken(),
+    gatewayAuthEnabled: savedState.gatewayAuthEnabled !== false,
+  };
+}
+
+export function InstallationProvider({ children }: { children: ReactNode }): JSX.Element {
+  const [state, setState] = useState<InstallationState>(getInitialState());
 
   // ─── Navegación ────────────────────────────────────────────────────────────
 
@@ -315,6 +344,45 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
       discordToken: state.discordToken || undefined,
       slackToken: state.slackToken || undefined,
     };
+  }, [state]);
+
+  // ─── Persistence ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    // Don't persist if still on welcome, system-check, deployment, security, or success
+    if (
+      state.step === "welcome" ||
+      state.step === "system-check" ||
+      state.step === "deployment" ||
+      state.step === "security" ||
+      state.step === "success" ||
+      state.installSuccess === true
+    ) {
+      // Clear state if installation was successful
+      if (state.installSuccess === true) {
+        clearInstallationState();
+      }
+      return;
+    }
+
+    saveInstallationState({
+      step: state.step,
+      stepIndex: state.stepIndex,
+      deploymentType: state.deploymentType,
+      setupType: state.setupType,
+      agentName: state.agentName,
+      agentEmoji: state.agentEmoji,
+      primaryModel: state.primaryModel,
+      fallbackModel: state.fallbackModel,
+      apiKey: state.apiKey,
+      channels: Array.from(state.channels),
+      phoneNumber: state.phoneNumber,
+      telegramToken: state.telegramToken,
+      discordToken: state.discordToken,
+      slackToken: state.slackToken,
+      gatewayToken: state.gatewayToken,
+      gatewayAuthEnabled: state.gatewayAuthEnabled,
+    });
   }, [state]);
 
   // ─── Computed ──────────────────────────────────────────────────────────────
