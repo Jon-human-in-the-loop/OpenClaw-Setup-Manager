@@ -153,6 +153,8 @@ const translations = {
   "channels.slack.desc": { es: "Integra tu agente en tu workspace de Slack", en: "Integrate your agent in your Slack workspace" },
   "channels.none": { es: "Sin canal (solo API local)", en: "No channel (local API only)" },
   "channels.none.desc": { es: "Accede al agente solo vía API en localhost", en: "Access the agent only via API on localhost" },
+  "channels.warning.title": { es: "Sin canales configurados", en: "No channels configured" },
+  "channels.warning.desc": { es: "Tu agente funcionará pero no podrás interactuar con él desde WhatsApp, Telegram, Discord o Slack. Podrás acceder solo a través del dashboard.", en: "Your agent will run but you won't be able to interact with it from WhatsApp, Telegram, Discord, or Slack. You can only access it through the dashboard." },
 
   // ── Channel Credentials ───────────────────────────────────────────────────
   "credentials.title": { es: "Credenciales de canales", en: "Channel credentials" },
