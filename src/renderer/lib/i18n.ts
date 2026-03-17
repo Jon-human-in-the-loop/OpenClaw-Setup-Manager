@@ -28,7 +28,7 @@ const translations = {
   "common.openLink": { es: "Abrir", en: "Open" },
 
   // ── TitleBar ──────────────────────────────────────────────────────────────
-  "titlebar.title": { es: "OpenClaw Easy Installer", en: "OpenClaw Easy Installer" },
+  "titlebar.title": { es: "OpenClaw Setup Manager", en: "OpenClaw Setup Manager" },
 
   // ── Agent Name ────────────────────────────────────────────────────────────
   "agentname.title": { es: "Nombra a tu agente", en: "Name your agent" },
@@ -42,10 +42,10 @@ const translations = {
   "agentname.preview": { es: "Vista previa", en: "Preview" },
 
   // ── Welcome ───────────────────────────────────────────────────────────────
-  "welcome.title": { es: "Instala OpenClaw\nen 5 minutos", en: "Install OpenClaw\nin 5 minutes" },
+  "welcome.title": { es: "Prepara OpenClaw\npaso a paso", en: "Set up OpenClaw\nstep by step" },
   "welcome.subtitle": {
-    es: "Sin tecnicismos. Sin complicaciones.\nTu asistente IA personal listo para usar.",
-    en: "No technical jargon. No complexity.\nYour personal AI assistant, ready to use.",
+    es: "Diagnóstico guiado, configuración segura\ny validación completa de tu entorno.",
+    en: "Guided diagnosis, secure configuration\nand full environment validation.",
   },
   "welcome.what.title": { es: "¿Qué es OpenClaw?", en: "What is OpenClaw?" },
   "welcome.what.desc": {
@@ -57,7 +57,7 @@ const translations = {
   "welcome.steps.2": { es: "Elegir tu tipo de instalación", en: "Choose your installation type" },
   "welcome.steps.3": { es: "Seleccionar modelo de IA", en: "Select AI model" },
   "welcome.steps.4": { es: "Conectar tus canales de mensajería", en: "Connect your messaging channels" },
-  "welcome.steps.5": { es: "Instalación automática completa", en: "Complete automatic installation" },
+  "welcome.steps.5": { es: "Despliegue guiado y validación final", en: "Guided deployment and final validation" },
   "welcome.cta": { es: "Comenzar", en: "Get Started" },
 
   // ── System Check ──────────────────────────────────────────────────────────
@@ -91,8 +91,29 @@ const translations = {
   "systemcheck.fix.ollama": { es: "Descarga Ollama desde ollama.ai para usar modelos locales", en: "Download Ollama from ollama.ai to use local models" },
   "systemcheck.allGood": { es: "¡Todo listo!", en: "All good!" },
   "systemcheck.hasErrors": { es: "Hay problemas que resolver", en: "There are issues to resolve" },
+  "systemcheck.hasWarnings": { es: "Listo, con algunas recomendaciones", en: "Ready, with some recommendations" },
   "systemcheck.continue": { es: "Continuar", en: "Continue" },
   "systemcheck.fixAndRetry": { es: "Corregir y volver a verificar", en: "Fix and re-check" },
+
+  // ── Diagnostic categories ───────────────────────────────────────────────
+  "diag.category.os": { es: "Sistema Operativo", en: "Operating System" },
+  "diag.category.docker": { es: "Docker", en: "Docker" },
+  "diag.category.ollama": { es: "Ollama", en: "Ollama" },
+  "diag.category.network": { es: "Red y Puertos", en: "Network & Ports" },
+  "diag.category.storage": { es: "Almacenamiento", en: "Storage" },
+  "diag.category.permissions": { es: "Permisos", en: "Permissions" },
+
+  // ── Severity labels ─────────────────────────────────────────────────────
+  "diag.severity.critical": { es: "Crítico", en: "Critical" },
+  "diag.severity.recommended": { es: "Recomendado", en: "Recommended" },
+  "diag.severity.optional": { es: "Opcional", en: "Optional" },
+
+  // ── Diagnostic statuses ─────────────────────────────────────────────────
+  "diag.status.ready": { es: "Listo", en: "Ready" },
+  "diag.status.missing": { es: "Falta", en: "Missing" },
+  "diag.status.recommended": { es: "Recomendado", en: "Recommended" },
+  "diag.status.incompatible": { es: "No compatible", en: "Incompatible" },
+  "diag.status.review": { es: "Revisar", en: "Review" },
 
   // ── Setup Type ────────────────────────────────────────────────────────────
   "setuptype.title": { es: "¿Cómo quieres instalar OpenClaw?", en: "How do you want to install OpenClaw?" },

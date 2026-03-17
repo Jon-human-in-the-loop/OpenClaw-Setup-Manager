@@ -1,30 +1,20 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, AlertTriangle, Loader2, ExternalLink, ChevronRight, ChevronLeft } from "lucide-react";
+import { Check, X, AlertTriangle, Loader2, ExternalLink, ChevronRight, ChevronLeft, Info } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
 import { StepIndicator } from "@/components/StepIndicator";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import type { SystemCheckResult } from "../../types";
+import type { SystemCheckResult, DiagnosticCheck, DiagnosticStatus, CheckSeverity } from "../../types";
 
-type CheckStatus = "pending" | "ok" | "warn" | "error";
-
-interface CheckItem {
-  id: string;
-  labelKey: string;
-  status: CheckStatus;
-  detail: string;
-  fixKey?: string;
-  fixUrl?: string;
-}
+const CATEGORY_ORDER = ["os", "docker", "ollama", "network", "storage", "permissions"] as const;
 
 export function SystemCheck(): JSX.Element {
   const { goNext, goPrev, setPlatformCapabilities } = useInstallation();
   const { language } = useLanguage();
   const [checking, setChecking] = useState(true);
   const [result, setResult] = useState<SystemCheckResult | null>(null);
-  const [items, setItems] = useState<CheckItem[]>([]);
 
   const runCheck = async () => {
     setChecking(true);
@@ -32,8 +22,6 @@ export function SystemCheck(): JSX.Element {
     try {
       const res = await window.api.system.check();
       setResult(res);
-      buildItems(res);
-      // Pasar capabilities al contexto para que Deployment las use
       if (res.platformCapabilities) {
         setPlatformCapabilities(res.platformCapabilities);
       }
@@ -44,86 +32,59 @@ export function SystemCheck(): JSX.Element {
     }
   };
 
-  const buildItems = (res: SystemCheckResult) => {
-    const built: CheckItem[] = [
-      {
-        id: "node",
-        labelKey: "systemcheck.node",
-        status: res.nodeMeetsRequirement ? "ok" : res.nodeInstalled ? "error" : "error",
-        detail: res.nodeInstalled
-          ? res.nodeMeetsRequirement
-            ? t(language, "systemcheck.node.ok", { version: res.nodeVersion ?? "" })
-            : t(language, "systemcheck.node.outdated", { version: res.nodeVersion ?? "" })
-          : t(language, "systemcheck.node.missing"),
-        fixKey: res.nodeMeetsRequirement ? undefined : "systemcheck.fix.node",
-        fixUrl: res.nodeMeetsRequirement ? undefined : "https://nodejs.org/en/download",
-      },
-      {
-        id: "port",
-        labelKey: "systemcheck.port",
-        status: res.portAvailable ? "ok" : "error",
-        detail: res.portAvailable
-          ? t(language, "systemcheck.port.ok")
-          : t(language, "systemcheck.port.busy"),
-        fixKey: res.portAvailable ? undefined : "systemcheck.fix.port",
-      },
-      {
-        id: "disk",
-        labelKey: "systemcheck.disk",
-        status: res.diskSpaceMeetsRequirement ? "ok" : "error",
-        detail: res.diskSpaceMeetsRequirement
-          ? t(language, "systemcheck.disk.ok", { gb: String(res.diskSpaceGB) })
-          : t(language, "systemcheck.disk.low", { gb: String(res.diskSpaceGB) }),
-        fixKey: res.diskSpaceMeetsRequirement ? undefined : "systemcheck.fix.disk",
-      },
-      {
-        id: "git",
-        labelKey: "systemcheck.git",
-        status: res.gitInstalled ? "ok" : "warn",
-        detail: res.gitInstalled
-          ? t(language, "systemcheck.git.ok")
-          : t(language, "systemcheck.git.missing"),
-      },
-      {
-        id: "ollama",
-        labelKey: "systemcheck.ollama",
-        status: res.ollamaInstalled ? "ok" : "warn",
-        detail: res.ollamaInstalled
-          ? t(language, "systemcheck.ollama.ok", { version: res.ollamaVersion ?? "" })
-          : t(language, "systemcheck.ollama.missing"),
-        fixKey: res.ollamaInstalled ? undefined : "systemcheck.fix.ollama",
-        fixUrl: res.ollamaInstalled ? undefined : "https://ollama.ai",
-      },
-      {
-        id: "docker",
-        labelKey: "systemcheck.docker",
-        status: res.platformCapabilities.docker.installed
-          ? res.platformCapabilities.docker.running ? "ok" : "warn"
-          : "warn",
-        detail: res.platformCapabilities.docker.installed
-          ? res.platformCapabilities.docker.running
-            ? t(language, "systemcheck.docker.ok", { version: res.platformCapabilities.docker.version ?? "" })
-            : t(language, "systemcheck.docker.installed_not_running")
-          : t(language, "systemcheck.docker.missing"),
-        fixKey: res.platformCapabilities.docker.running ? undefined : "systemcheck.fix.docker",
-        fixUrl: res.platformCapabilities.docker.installed ? undefined : "https://www.docker.com/products/docker-desktop",
-      },
-    ];
-    setItems(built);
-  };
-
   useEffect(() => {
     runCheck();
   }, []);
 
-  const hasErrors = items.some((i) => i.status === "error");
-  const canContinue = !checking && !hasErrors;
+  // Agrupar diagnósticos por categoría
+  const groupedDiagnostics = result?.diagnostics
+    ? CATEGORY_ORDER
+        .map((cat) => ({
+          category: cat,
+          items: result.diagnostics.filter((d) => d.category === cat),
+        }))
+        .filter((g) => g.items.length > 0)
+    : [];
 
-  const statusIcon = (status: CheckStatus) => {
-    if (status === "ok") return <Check size={14} className="text-primary" strokeWidth={2.5} />;
-    if (status === "warn") return <AlertTriangle size={14} className="text-yellow-500" />;
-    if (status === "error") return <X size={14} className="text-destructive" strokeWidth={2.5} />;
+  // Determinar si hay errores críticos que bloquean
+  const hasCriticalErrors = result?.diagnostics?.some(
+    (d) => d.severity === "critical" && (d.status === "missing" || d.status === "incompatible"),
+  ) ?? false;
+
+  const hasWarnings = result?.diagnostics?.some(
+    (d) => d.status === "review" || d.status === "recommended",
+  ) ?? false;
+
+  const canContinue = !checking && !hasCriticalErrors;
+
+  const statusIcon = (status: DiagnosticStatus) => {
+    if (status === "ready") return <Check size={14} className="text-primary" strokeWidth={2.5} />;
+    if (status === "recommended") return <Info size={14} className="text-blue-400" />;
+    if (status === "review") return <AlertTriangle size={14} className="text-yellow-500" />;
+    if (status === "missing") return <X size={14} className="text-destructive" strokeWidth={2.5} />;
+    if (status === "incompatible") return <X size={14} className="text-destructive" strokeWidth={2.5} />;
     return <Loader2 size={14} className="animate-spin text-muted-foreground" />;
+  };
+
+  const severityBadge = (severity: CheckSeverity) => {
+    const key = `diag.severity.${severity}` as Parameters<typeof t>[1];
+    const colors = {
+      critical: "bg-destructive/20 text-destructive",
+      recommended: "bg-yellow-500/20 text-yellow-500",
+      optional: "bg-blue-500/20 text-blue-400",
+    };
+    return (
+      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${colors[severity]}`}>
+        {t(language, key)}
+      </span>
+    );
+  };
+
+  const itemBorderClass = (d: DiagnosticCheck) => {
+    if (d.status === "missing" || d.status === "incompatible") return "border-destructive/30 bg-destructive/5";
+    if (d.status === "review") return "border-yellow-500/30 bg-yellow-500/5";
+    if (d.status === "recommended") return "border-blue-500/30 bg-blue-500/5";
+    return "border-border bg-card";
   };
 
   return (
@@ -133,7 +94,7 @@ export function SystemCheck(): JSX.Element {
         <LanguageToggle />
       </div>
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         <h2 className="text-lg font-bold text-foreground mb-1">
           {t(language, "systemcheck.title")}
         </h2>
@@ -141,57 +102,56 @@ export function SystemCheck(): JSX.Element {
           {t(language, "systemcheck.subtitle")}
         </p>
 
-        {/* Check items */}
-        <div className="space-y-3">
-          {checking && items.length === 0 ? (
-            <div className="flex items-center gap-3 py-4">
-              <Loader2 size={18} className="animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">{t(language, "systemcheck.checking")}</span>
-            </div>
-          ) : (
-            items.map((item, i) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className={[
-                  "flex flex-col gap-1 p-3 rounded-lg border",
-                  item.status === "error" ? "border-destructive/30 bg-destructive/5" :
-                  item.status === "warn" ? "border-yellow-500/30 bg-yellow-500/5" :
-                  "border-border bg-card",
-                ].join(" ")}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">
-                    {t(language, item.labelKey as Parameters<typeof t>[1])}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{item.detail}</span>
-                    {statusIcon(item.status)}
-                  </div>
-                </div>
+        {/* Diagnostics by category */}
+        {checking ? (
+          <div className="flex items-center gap-3 py-4">
+            <Loader2 size={18} className="animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">{t(language, "systemcheck.checking")}</span>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {groupedDiagnostics.map((group) => (
+              <div key={group.category}>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  {t(language, `diag.category.${group.category}` as Parameters<typeof t>[1])}
+                </h3>
+                <div className="space-y-2">
+                  {group.items.map((item, i) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className={`flex flex-col gap-1 p-3 rounded-lg border ${itemBorderClass(item)}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {statusIcon(item.status)}
+                          <span className="text-sm font-medium text-foreground">{item.detail}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {severityBadge(item.severity)}
+                        </div>
+                      </div>
 
-                {item.fixKey && (
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-destructive">
-                      {t(language, item.fixKey as Parameters<typeof t>[1])}
-                    </p>
-                    {item.fixUrl && (
-                      <button
-                        onClick={() => window.api.system.openUrl(item.fixUrl!)}
-                        className="flex items-center gap-1 text-xs text-primary hover:underline ml-2"
-                      >
-                        <ExternalLink size={10} />
-                        {t(language, "common.openLink")}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            ))
-          )}
-        </div>
+                      {item.fixUrl && item.status !== "ready" && (
+                        <div className="flex items-center justify-end mt-1">
+                          <button
+                            onClick={() => window.api.system.openUrl(item.fixUrl!)}
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink size={10} />
+                            {t(language, "common.openLink")}
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Status message */}
         {!checking && result && (
@@ -200,9 +160,17 @@ export function SystemCheck(): JSX.Element {
             animate={{ opacity: 1 }}
             className="mt-4 text-center"
           >
-            <p className={`text-sm font-medium ${canContinue ? "text-primary" : "text-destructive"}`}>
+            <p className={`text-sm font-medium ${
+              canContinue
+                ? hasWarnings
+                  ? "text-yellow-500"
+                  : "text-primary"
+                : "text-destructive"
+            }`}>
               {canContinue
-                ? t(language, "systemcheck.allGood")
+                ? hasWarnings
+                  ? t(language, "systemcheck.hasWarnings")
+                  : t(language, "systemcheck.allGood")
                 : t(language, "systemcheck.hasErrors")}
             </p>
           </motion.div>
@@ -219,7 +187,7 @@ export function SystemCheck(): JSX.Element {
           {t(language, "common.back")}
         </button>
         <div className="flex-1" />
-        {!checking && hasErrors && (
+        {!checking && (hasCriticalErrors || hasWarnings) && (
           <button
             onClick={runCheck}
             className="no-drag flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-muted/80 rounded-lg transition-colors"

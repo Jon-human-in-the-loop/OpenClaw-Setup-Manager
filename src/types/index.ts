@@ -85,9 +85,39 @@ export interface InstallConfig {
   slackToken?: string;
 }
 
+// ─── Diagnostic Engine ───────────────────────────────────────────────────────
+
+/** Severidad de un hallazgo del diagnóstico */
+export type CheckSeverity = "critical" | "recommended" | "optional";
+
+/** Estado de un chequeo individual */
+export type DiagnosticStatus =
+  | "ready"         // ✓ listo, sin acción necesaria
+  | "missing"       // ✗ falta y es necesario
+  | "recommended"   // ~ se recomienda pero no bloquea
+  | "incompatible"  // ✗ no compatible con este SO/configuración
+  | "review";       // ? requiere atención manual
+
+/** Un chequeo individual del motor de diagnóstico */
+export interface DiagnosticCheck {
+  /** Identificador único del chequeo */
+  id: string;
+  /** Categoría visual para agrupar en la UI */
+  category: "os" | "docker" | "ollama" | "network" | "storage" | "permissions";
+  /** Qué tan importante es este chequeo */
+  severity: CheckSeverity;
+  /** Estado actual detectado */
+  status: DiagnosticStatus;
+  /** Descripción corta del resultado (para mostrar como detalle) */
+  detail: string;
+  /** URL de ayuda o descarga si aplica */
+  fixUrl?: string;
+}
+
 // ─── System Check ────────────────────────────────────────────────────────────
 
 export interface SystemCheckResult {
+  // ── Campos legacy (backward-compatible) ──
   nodeInstalled: boolean;
   nodeVersion: string | null;
   nodeMeetsRequirement: boolean;
@@ -101,6 +131,19 @@ export interface SystemCheckResult {
   arch: string;
   /** Capacidades de plataforma incluyendo Docker */
   platformCapabilities: PlatformCapabilities;
+
+  // ── Campos nuevos (Fase 2: Motor de diagnóstico) ──
+  /** Docker Compose disponible */
+  dockerComposeAvailable: boolean;
+  dockerComposeVersion: string | null;
+  /** Ollama daemon está ejecutándose */
+  ollamaRunning: boolean;
+  /** Puerto 3000 (dashboard) disponible */
+  dashboardPortAvailable: boolean;
+  /** Hay conectividad a internet */
+  internetConnected: boolean;
+  /** Lista estructurada de diagnósticos con severidad */
+  diagnostics: DiagnosticCheck[];
 }
 
 export interface InstallProgressEvent {
