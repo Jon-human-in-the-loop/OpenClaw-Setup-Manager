@@ -1,24 +1,47 @@
 # 🦞 OpenClaw Setup Manager
 
-Una aplicación desktop de **Electron** que prepara, configura y valida **OpenClaw** (el asistente personal de IA de código abierto) mediante un flujo guiado. Genera scripts de despliegue personalizados que instalan OpenClaw **dentro de Docker**, aplicando buenas prácticas de seguridad de forma automática.
+Una aplicación desktop de **Electron** que diagnostica tu sistema, guía la configuración de **OpenClaw** (el asistente personal de IA de código abierto) mediante un flujo de 10 pasos, y genera scripts de despliegue personalizados que ejecutan OpenClaw **dentro de Docker** con buenas prácticas de seguridad aplicadas automáticamente.
+
+**La forma guiada, segura y validada de desplegar OpenClaw en Windows, macOS y Linux.**
 
 ## ✅ Qué hace esta app
 
-- ✓ Detecta tu SO (macOS, Linux, Windows WSL2)
-- ✓ Valida que Docker o Ollama estén instalados
-- ✓ Guía completa a través de 10 pasos interactivos
-- ✓ Configura identidad, proveedor IA, skills y canales
-- ✓ Genera un script bash personalizado (`deploy-openclaw.sh`)
-- ✓ El script instala OpenClaw en Docker con seguridad automática
-- ✓ Configura firewall en Linux
+### 🔍 **Motor 1: Detección del Sistema**
+- ✓ Detecta tu SO (macOS, Linux, Windows con WSL2)
+- ✓ Verifica Docker instalado y ejecutándose
+- ✓ Verifica Ollama instalado (si aplica)
+- ✓ Comprueba puertos disponibles, espacio en disco, permisos
+
+### 🧭 **Motor 2: Asistente de Dependencias**
+- ✓ Guía clara sobre cómo instalar Docker si falta
+- ✓ Recomendación inteligente por SO (WSL2+Docker en Windows, Docker Desktop en macOS, Docker en Linux)
+- ✓ Enlaces oficiales de descarga contextualizados
+- ✓ Validación post-instalación
+
+### ⚙️ **Motor 3: Configuración y Despliegue** (10 pasos interactivos)
+- ✓ Identidad del agente (nombre, emoji, personalidad)
+- ✓ Selección del proveedor IA (Anthropic, OpenAI, Google, OpenRouter, Ollama)
+- ✓ Configuración de API keys y credenciales
+- ✓ Selección de skills (41 curadas en 4 packs)
+- ✓ Canales de comunicación (WhatsApp, Telegram, Discord, Slack, Signal, WebChat)
+- ✓ Revisión completa antes de ejecutar
+- ✓ Genera script bash personalizado (`deploy-openclaw.sh`)
+- ✓ Configura firewall en Linux automáticamente
+
+### ✔️ **Motor 4: Validación de Despliegue**
+- ✓ Verifica que OpenClaw esté activo post-despliegue
+- ✓ Genera token de autenticación único y seguro
 - ✓ Crea archivos de configuración seguros (`chmod 600`)
+- ✓ Muestra URLs accesibles y estado final del entorno
 
-## ❌ Qué NO hace (el usuario hace)
+## ❌ Qué NO hace hoy (limitaciones actuales)
 
-- ❌ **NO instala Docker** — Tú lo instalas primero (guía incluida)
-- ❌ **NO gestiona API keys** — Tú las proporcionas en el wizard
-- ❌ **NO actualiza OpenClaw** — El usuario ejecuta `docker pull` manualmente
-- ❌ **NO es ejecutable de una línea** — Son 3 pasos: preparar sistema → configurar → desplegar
+- ❌ **NO instala Docker automáticamente** — Hoy guía y valida, no ejecuta instaladores. El usuario instala primero (con guía incluida)
+- ❌ **NO instala Ollama automáticamente** — Igual que Docker: guía incluida, instalación manual
+- ❌ **NO gestiona API keys en secreto** — Tú las proporcionas en el wizard y quedan en `~/.openclaw/.env` con permisos 600
+- ❌ **NO actualiza OpenClaw** — El usuario ejecuta `docker pull` manualmente (o lo hace la app en futuras versiones)
+- ❌ **NO es de una sola línea** — Son 3 pasos: preparar sistema → configurar en wizard → ejecutar script generado
+- ❌ **NO repara problemas comunes todavía** — Eso llega en la fase siguiente (Motor de Repair)
 
 ---
 
@@ -44,72 +67,119 @@ El instalador generado aplica automáticamente las siguientes medidas de segurid
 > ssh -L 3000:localhost:3000 usuario@tu-servidor
 > ```
 
-## 🎯 Características
+## 🎯 Características principales
 
-- **Wizard interactivo de 10 pasos**:
-  1. Detección del sistema (macOS, Linux, Windows WSL2)
-  2. Validación de prerrequisitos (Docker/Ollama)
-  3. Identidad del agente (nombre, emoji, personalidad)
-  4. Selección del proveedor de IA (Anthropic, OpenAI, Google, OpenRouter, Ollama)
-  5. Elección del modelo (según proveedor)
-  6. Configuración de API keys (si aplica)
-  7. Selección de skills (41 curadas, 4 packs temáticos)
-  8. Selección de canales (WhatsApp, Telegram, Discord, Slack, Signal, WebChat)
-  9. Revisión completa de la configuración
-  10. Generación y descarga del script de despliegue
-- **41 skills curadas** organizadas en 4 packs temáticos:
-  - 🔧 **Developer Pack**: GitHub, Coding Agent, Debug Pro, Docker, etc.
-  - 📊 **Productivity Pack**: Google Workspace, Obsidian, Summarize, Memory Hygiene
-  - 🔒 **Security Pack**: AgentGuard, Prompt Guard, ClawScan, Config Guardian
-  - ⭐ **Full Stack Pack**: Las 15 mejores skills recomendadas por la comunidad
+### **Diagnóstico inteligente por sistema**
+- macOS (Intel y Apple Silicon)
+- Linux (Ubuntu, Debian, etc.)
+- Windows (con WSL2)
+- Matriz de requisitos clara por SO
 
-- **5 proveedores de IA soportados**:
-  - Anthropic (Claude Sonnet, Opus, Haiku)
-  - OpenAI (GPT-4o, etc.)
-  - Google (Gemini)
-  - OpenRouter
-  - Ollama (local, también en Docker)
+### **Wizard interactivo de 10 pasos** (diseñado para ser honesto y seguro)
+1. Bienvenida + idioma
+2. Diagnóstico del sistema
+3. Recomendación según SO
+4. Identidad del agente (nombre, emoji, personalidad)
+5. Proveedor de IA (Anthropic, OpenAI, Google, OpenRouter, Ollama)
+6. Modelo específico (según proveedor)
+7. API keys y credenciales
+8. Skills (41 curadas en 4 packs temáticos)
+9. Canales de comunicación (6 soportados)
+10. Revisión y descarga del script
 
-- **6 canales de comunicación**:
-  - WhatsApp, Telegram, Discord, Slack, Signal, WebChat
+### **41 skills curadas en 4 packs**
+- 🔧 **Developer Pack**: GitHub, Coding Agent, Debug Pro, Docker, etc.
+- 📊 **Productivity Pack**: Google Workspace, Obsidian, Summarize, Memory Hygiene
+- 🔒 **Security Pack**: AgentGuard, Prompt Guard, ClawScan, Config Guardian
+- ⭐ **Full Stack Pack**: Las 15 mejores skills recomendadas por la comunidad
 
-- **Ejecutable único y completo**: Un solo archivo `.sh` con configuración embebida en Base64
+### **Proveedores de IA soportados**
+- Anthropic Claude (Opus, Sonnet, Haiku)
+- OpenAI (GPT-4o, etc.)
+- Google (Gemini)
+- OpenRouter
+- Ollama (local, en Docker)
 
-- **Interfaz Terminal Noir**: Estética cinematográfica con verde neón y rojo coral
+### **6 canales de comunicación**
+- WhatsApp, Telegram, Discord, Slack, Signal, WebChat
+
+### **Generador de scripts personalizado**
+- Un solo archivo `.sh` con configuración embebida
+- Seguridad aplicada automáticamente
+- Sin dependencias externas en el script
+
+### **Interfaz Terminal Noir**
+- Estética cinematográfica con verde neón y rojo coral
+- Responsive en múltiples resoluciones
+- Accesible y clara
 
 ## 🚀 Cómo usar
 
-### Paso A: Prepare tu sistema
+### **Paso 1: Abre la aplicación Setup Manager**
 
-**Requisitos previos (el usuario instala):**
-- Docker o Ollama (según tu elección en el paso 2 del wizard)
+1. **Descarga e instala** el ejecutable para tu SO
+2. **Abre la app** — se ejecuta como ventana de escritorio normal
+
+### **Paso 2: Pasa por el diagnóstico y configuración (10 pasos)**
+
+**Paso 1: Bienvenida + idioma**
+- Elige Español o English
+- Resumen de qué hace y qué no la app
+
+**Paso 2: Diagnóstico del sistema**
+- Detectamos tu SO (macOS, Linux, Windows+WSL2)
+- Verificamos Docker/Ollama
+- Validamos puertos, espacio, permisos
+- Te mostramos qué falta o qué está listo
+
+**Paso 3: Recomendación por sistema**
+- Si Windows → recomendamos WSL2 + Docker
+- Si macOS → recomendamos Docker Desktop
+- Si Linux → recomendamos Docker
+- Tú puedes cambiar si lo deseas
+
+**Paso 4-5: Identidad y proveedor IA**
+- Nombre, emoji, personalidad del agente
+- Elige proveedor (Anthropic, OpenAI, Google, Ollama, etc.)
+- Selecciona modelo
+
+**Paso 6-8: Credenciales, skills y canales**
+- API keys (si usas ChatGPT, Gemini, etc.)
+- Skills (41 disponibles en 4 packs)
+- Canales de comunicación (WhatsApp, Telegram, Discord, Slack, Signal, WebChat)
+
+**Paso 9: Revisión completa**
+- Ves exactamente qué se va a desplegar
+- Sistema elegido, proveedor, modelo, skills, canales
+- Avisos de seguridad si aplica
+
+**Paso 10: Descarga del script**
+- Descargamos `deploy-openclaw.sh` con tu configuración embebida
+
+### **Paso 3: Ejecuta el script en tu máquina**
+
+```bash
+chmod +x deploy-openclaw.sh
+./deploy-openclaw.sh
+```
+
+**El script:**
+- Verifica nuevamente las dependencias
+- Levanta OpenClaw en Docker con seguridad automática
+- Configura firewall (Linux)
+- Genera token de autenticación único
+- Te muestra URL accesible y credenciales
+- Muestra estado final: OpenClaw ✓, Dashboard ✓, Gateway ✓
+
+### **Requisitos que tú instalas antes de comenzar**
+
+- **Docker** o **Ollama** (la app te guía cómo instalarlos, pero los instalas tú)
 - `openssl` (pre-instalado en macOS y Linux)
 - Conexión a internet
 
-[Ver guía de instalación de Docker](#-instalación-de-docker)
+👉 **Si no tienes Docker/Ollama:** La app lo detecta en el Paso 2, te da el enlace oficial de descarga y espera a que lo instales. Luego valida de nuevo.
 
-### Paso B: Usa el Setup Manager
-
-1. **Abre la aplicación desktop** (se ejecuta automáticamente al instalar el ejecutable)
-2. **Sigue el wizard de 10 pasos**:
-   - Detectaremos tu SO automáticamente
-   - Validaremos que Docker/Ollama esté instalado
-   - Configurarás tu agente, proveedor IA, skills y canales
-   - Revisarás la configuración completa antes de generar
-3. **Descarga el script** (`deploy-openclaw.sh`)
-
-### Paso C: Deploy en tu máquina
-
-4. **Ejecuta en tu terminal**:
-   ```bash
-   chmod +x deploy-openclaw.sh
-   ./deploy-openclaw.sh
-   ```
-5. **El script automáticamente:**
-   - Genera un token de gateway único y seguro
-   - Levanta OpenClaw en Docker con seguridad aplicada
-   - Configura el firewall (Linux)
-   - Te muestra la URL de acceso y token de autenticación
+[Ver guía completa de instalación de Docker](#-instalación-de-docker)
 
 ## 📋 Requisitos del sistema (tu máquina)
 
@@ -208,6 +278,43 @@ docker exec openclaw-agent openclaw config                  # Mostrar configurac
 - **Build**: electron-vite + Vite + esbuild
 - **Styling**: Terminal Noir (OKLCH colors)
 - **Runtime generado**: Docker + Docker Compose
+
+## 🎯 Hoja de ruta (Roadmap)
+
+### Fase 1: Reposicionamiento (EN PROGRESO)
+- ✓ Renombrar y alinear mensajes del producto
+- ✓ README honesto sobre capacidades
+- ⏳ Actualizar documentación arquitectónica
+- ⏳ Refactorizar mensajes del wizard
+
+### Fase 2: Motor de diagnóstico mejorado (PRÓXIMO)
+- Matriz de requisitos por SO más robusta
+- Detección de Docker daemon activo vs solo instalado
+- Validación de permisos y espacios más detallados
+- Chequeos de virtualización en Windows
+- Pantalla de diagnóstico aún más clara
+
+### Fase 3: Asistencia de dependencias (v1.1)
+- Botones de descarga directa (enlaces oficiales por SO)
+- Detección automática post-instalación
+- Instrucciones contextuales por error
+- Checklist persistente
+
+### Fase 4: Repair Mode (v1.2)
+- Botón "Reparar" en la pantalla final
+- Casos: Docker no corre, OpenClaw no responde, puerto ocupado, .env incompleto
+- Revalidación automática
+
+### Fase 5: Control Center (v1.3)
+- Panel post-instalación permanente
+- Estado general, logs, restart/stop/start
+- Health checks recurrentes
+
+### Fase 6: Instalación automática (v2.0)
+- Solo cuando el Repair Mode esté sólido
+- Prioridad: Linux → macOS → Windows
+
+---
 
 ## 📁 Estructura del Proyecto
 
