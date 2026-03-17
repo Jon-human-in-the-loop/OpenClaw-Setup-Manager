@@ -1,21 +1,20 @@
 # Dependencies
 node_modules/
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
+.pnp
+.pnp.js
 
 # Build output
+out/
 dist/
-build/
-.next/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+dist-electron/
+# Keep icon assets and macOS entitlements in build/
+build/*
+!build/icons/
+!build/icon.ico
+!build/icon.icns
+!build/icon.png
+!build/installer-header.bmp
+!build/entitlements.mac.plist
 
 # Logs
 *.log
@@ -24,8 +23,28 @@ pnpm-debug.log*
 yarn-error.log*
 .manus-logs/
 
-# Temp
-.cache/
-.turbo/
+# Env files
+.env
 .env.local
 .env.*.local
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Cache
+.cache/
+.turbo/

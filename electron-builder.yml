@@ -1,0 +1,80 @@
+appId: com.openclaw.easy-installer
+productName: OpenClawInstaller
+copyright: Copyright © 2025 OpenClaw
+
+directories:
+  buildResources: build
+  output: dist-electron
+
+files:
+  - out/**/*
+  - '!**/.{git,github,idea,vscode}/**'
+  - '!**/{.DS_Store,Thumbs.db}'
+
+asar: true
+asarUnpack:
+  - resources/**
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+        - ia32
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeader: build/installer-header.bmp
+  license: LICENSE
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: OpenClaw Easy Installer
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.icns
+  category: public.app-category.utilities
+  darkModeSupport: true
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: Not required
+    NSCameraUsageDescription: Not required
+
+dmg:
+  title: OpenClawInstaller
+  artifactName: '${productName}-${version}.${ext}'
+  contents:
+    - x: 410
+      y: 150
+      type: link
+      path: /Applications
+    - x: 130
+      y: 150
+      type: file
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  icon: build/icons
+  category: Utility
+  synopsis: Easy installer for OpenClaw AI assistant
+  description: Install and configure OpenClaw AI assistant with a guided step-by-step wizard. No technical knowledge required.
+
+publish:
+  provider: github
+  owner: Jon-human-in-the-loop
+  repo: openclaw-easy-installer-electron
+  releaseType: release
