@@ -1,6 +1,6 @@
 # 🦞 OpenClaw Setup Manager
 
-Una aplicación web moderna que prepara, configura y valida **OpenClaw** (el asistente personal de IA de código abierto) mediante un flujo guiado. Genera scripts de despliegue personalizados que instalan OpenClaw **dentro de Docker**, aplicando buenas prácticas de seguridad de forma automática.
+Una aplicación desktop de **Electron** que prepara, configura y valida **OpenClaw** (el asistente personal de IA de código abierto) mediante un flujo guiado. Genera scripts de despliegue personalizados que instalan OpenClaw **dentro de Docker**, aplicando buenas prácticas de seguridad de forma automática.
 
 ## ✅ Qué hace esta app
 
@@ -90,7 +90,7 @@ El instalador generado aplica automáticamente las siguientes medidas de segurid
 
 ### Paso B: Usa el Setup Manager
 
-1. **Abre la aplicación** en tu navegador (`localhost:3000`)
+1. **Abre la aplicación desktop** (se ejecuta automáticamente al instalar el ejecutable)
 2. **Sigue el wizard de 10 pasos**:
    - Detectaremos tu SO automáticamente
    - Validaremos que Docker/Ollama esté instalado
@@ -201,10 +201,11 @@ docker exec openclaw-agent openclaw config                  # Mostrar configurac
 
 ## 🏗️ Stack Técnico
 
+- **Desktop**: Electron (multiplatform: macOS, Linux, Windows)
 - **Frontend**: React 19 + TypeScript + Tailwind CSS 4
 - **UI Components**: shadcn/ui
 - **Routing**: Wouter
-- **Build**: Vite + esbuild
+- **Build**: electron-vite + Vite + esbuild
 - **Styling**: Terminal Noir (OKLCH colors)
 - **Runtime generado**: Docker + Docker Compose
 
