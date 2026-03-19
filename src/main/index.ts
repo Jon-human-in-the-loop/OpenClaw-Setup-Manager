@@ -15,6 +15,8 @@ import { registerDiagnosticHandlers } from "./handlers/diagnostic.handler";
 import { registerAutostartHandlers } from "./handlers/autostart.handler";
 import { registerWslHandlers } from "./handlers/wsl.handler";
 import { registerDepsHandlers } from "./handlers/deps.handler";
+import { startHealthcheckLoop, stopHealthcheckLoop } from "./healthcheck";
+import { closeDb } from "./db";
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -83,6 +85,9 @@ app.whenReady().then(() => {
   registerDepsHandlers();
 
   createWindow();
+
+  // Start healthcheck loop after window is created
+  startHealthcheckLoop(mainWindow);
 
   // Configure auto-updater after window is ready
   configureAutoUpdater();

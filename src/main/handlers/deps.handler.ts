@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { logAction } from "../db";
 
 const execAsync = promisify(exec);
 
@@ -13,26 +14,29 @@ const WINGET_PACKAGES: Record<string, string> = {
 
 export function registerDepsHandlers(): void {
   ipcMain.handle("deps:install", async (_, depId: string) => {
+    logAction("deps:install", `depId=${depId}`, "started");
     try {
       if (process.platform === "win32") {
         const pkgId = WINGET_PACKAGES[depId];
         if (!pkgId) {
-          throw new Error(`Paquete winget no definido para la dependencia: ${depId}`);
+          const msg = `Paquete winget no definido para la dependencia: ${depId}`;
+          logAction("deps:install", `depId=${depId}`, `error: ${msg}`);
+          throw new Error(msg);
         }
         
-        // Winget requiere elevación para algunas apps y acepta acuerdos automáticamente.
-        // Usamos Start-Process con elevado de permisos.
         const wingetArgs = `install --id ${pkgId} -e --accept-package-agreements --accept-source-agreements`;
         const cmd = `powershell -Command "Start-Process winget -ArgumentList '${wingetArgs}' -Verb RunAs -Wait"`;
         
         console.log(`Instalando dependencia ${depId} vía winget: ${cmd}`);
         await execAsync(cmd);
-        
+        logAction("deps:install", `depId=${depId}, pkgId=${pkgId}`, "success");
         return { success: true };
       }
       
+      logAction("deps:install", `depId=${depId}`, "skipped: not windows");
       return { success: false, error: "La instalación automatizada de esta dependencia solo está soportada en Windows actualmente." };
     } catch (error) {
+      logAction("deps:install", `depId=${depId}`, `error: ${String(error)}`);
       console.error(`Error installing dependency ${depId}:`, error);
       return { success: false, error: String(error) };
     }

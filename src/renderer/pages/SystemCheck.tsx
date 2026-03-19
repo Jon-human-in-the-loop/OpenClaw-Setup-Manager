@@ -40,6 +40,51 @@ export function SystemCheck(): JSX.Element {
   // Generic Dependencies Installation State
   const [installingDeps, setInstallingDeps] = useState<Record<string, 'idle'|'installing'|'success'|'error'>>({});
 
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    action: 'dep' | 'wsl';
+    depId?: string;
+    distro?: string;
+    title: string;
+    description: string;
+    permission: string;
+  } | null>(null);
+
+  const openConfirm = (action: 'dep' | 'wsl', opts: { depId?: string; distro?: string }) => {
+    if (action === 'wsl') {
+      setConfirmDialog({
+        open: true, action, distro: opts.distro ?? 'Ubuntu',
+        title: language === 'es' ? 'Instalar WSL (Ubuntu)' : 'Install WSL (Ubuntu)',
+        description: language === 'es'
+          ? 'Se descargará e instalará el Subsistema de Windows para Linux (Ubuntu). Requiere reinicio del PC al terminar.'
+          : 'The Windows Subsystem for Linux (Ubuntu) will be downloaded and installed. A PC restart is required when done.',
+        permission: language === 'es' ? 'Requiere permisos de Administrador de Windows' : 'Requires Windows Administrator permissions',
+      });
+    } else if (action === 'dep' && opts.depId) {
+      const names: Record<string, string> = { node: 'Node.js', git: 'Git', ollama: 'Ollama', docker: 'Docker Desktop' };
+      const name = names[opts.depId] ?? opts.depId;
+      setConfirmDialog({
+        open: true, action, depId: opts.depId,
+        title: language === 'es' ? `Instalar ${name}` : `Install ${name}`,
+        description: language === 'es'
+          ? `Se instalará ${name} automáticamente usando el gestor de paquetes oficial de Windows (winget).`
+          : `${name} will be installed automatically using the official Windows package manager (winget).`,
+        permission: language === 'es' ? 'Puede requerir permisos de Administrador' : 'May require Administrator permissions',
+      });
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!confirmDialog) return;
+    setConfirmDialog(null);
+    if (confirmDialog.action === 'wsl') {
+      await handleInstallWsl();
+    } else if (confirmDialog.action === 'dep' && confirmDialog.depId) {
+      await handleInstallDep(confirmDialog.depId);
+    }
+  };
+
   const handleInstallDep = async (depId: string) => {
     setInstallingDeps(prev => ({ ...prev, [depId]: 'installing' }));
     setWslError(null);
@@ -320,6 +365,41 @@ export function SystemCheck(): JSX.Element {
           <ChevronRight size={14} />
         </button>
       </div>
+
+      {/* Confirmation Dialog */}
+      {confirmDialog?.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 rounded-xl border border-border bg-card shadow-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 mt-0.5">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground text-base">{confirmDialog.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{confirmDialog.description}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-amber-500/80 bg-amber-500/10 rounded-lg px-3 py-2">
+              <AlertTriangle size={12} />
+              {confirmDialog.permission}
+            </div>
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                onClick={() => setConfirmDialog(null)}
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {language === "es" ? "Cancelar" : "Cancel"}
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="px-5 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                {language === "es" ? "Confirmar e Instalar" : "Confirm & Install"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

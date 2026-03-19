@@ -1,11 +1,8 @@
 import { ipcMain } from "electron";
-import { join } from "node:path";
-import { homedir } from "node:os";
-import { promises as fs } from "node:fs";
+import { getState, setState, getAuditLog } from "../db";
 import type { OpenClawState } from "../../types";
 
-const STATE_FILE_DIR = join(homedir(), ".openclaw");
-const STATE_FILE_PATH = join(STATE_FILE_DIR, "state.json");
+const STATE_KEYS: (keyof OpenClawState)[] = ["installed", "lastHealthCheck", "version"];
 
 const DEFAULT_STATE: OpenClawState = {
   installed: false,
@@ -14,45 +11,43 @@ const DEFAULT_STATE: OpenClawState = {
 };
 
 /**
- * Ensures the directory exists before writing.
- */
-async function ensureDir(): Promise<void> {
-  try {
-    await fs.mkdir(STATE_FILE_DIR, { recursive: true });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
-      throw error;
-    }
-  }
-}
-
-/**
- * Reads the state from ~/.openclaw/state.json.
- * If it doesn't exist, returns the DEFAULT_STATE.
+ * Reads the full OpenClawState from SQLite.
+ * Each key is a separate row in `app_state`.
+ * Falls back to defaults for any key that doesn't exist yet.
  */
 export async function readState(): Promise<OpenClawState> {
-  try {
-    const data = await fs.readFile(STATE_FILE_PATH, "utf-8");
-    return JSON.parse(data) as OpenClawState;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return DEFAULT_STATE;
+  const result = { ...DEFAULT_STATE };
+
+  for (const key of STATE_KEYS) {
+    const raw = getState(key);
+    if (raw !== null) {
+      try {
+        // stored as JSON so booleans/strings work correctly
+        (result as Record<string, unknown>)[key] = JSON.parse(raw);
+      } catch {
+        (result as Record<string, unknown>)[key] = raw;
+      }
     }
-    console.error("Failed to read OpenClaw state.json:", error);
-    return DEFAULT_STATE; // Fallback to safe defaults if corruption happens
   }
+
+  return result;
 }
 
 /**
- * Writes the full state object to ~/.openclaw/state.json.
+ * Writes the full state object to SQLite.
+ * Each field in OpenClawState becomes a separate row in `app_state`.
  */
 export async function writeState(state: OpenClawState): Promise<boolean> {
   try {
-    await ensureDir();
-    await fs.writeFile(STATE_FILE_PATH, JSON.stringify(state, null, 2), "utf-8");
+    for (const key of STATE_KEYS) {
+      const value = (state as Record<string, unknown>)[key];
+      if (value !== undefined) {
+        setState(key, JSON.stringify(value));
+      }
+    }
     return true;
   } catch (error) {
-    console.error("Failed to write OpenClaw state.json:", error);
+    console.error("Failed to write OpenClaw state to SQLite:", error);
     return false;
   }
 }
@@ -74,5 +69,10 @@ export function registerStateHandlers(): void {
 
   ipcMain.handle("state:write", async (_, partialState: Partial<OpenClawState>) => {
     return await updateState(partialState);
+  });
+
+  // Expose audit log to the renderer (for diagnostic export)
+  ipcMain.handle("state:audit-log", async (_, limit = 50) => {
+    return getAuditLog(limit);
   });
 }
