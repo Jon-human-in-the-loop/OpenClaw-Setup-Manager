@@ -362,3 +362,18 @@ export interface OpenClawState {
     primaryModel: string;
   };
 }
+
+export interface AuditLogEntry {
+  id: number;
+  action: string;
+  detail: string | null;
+  result: string | null;
+  timestamp: string;
+}
+
+export interface HealthStatus {
+  docker: "running" | "stopped" | "unknown";
+  openclaw: "running" | "stopped" | "unknown";
+  timestamp: string;
+}
+

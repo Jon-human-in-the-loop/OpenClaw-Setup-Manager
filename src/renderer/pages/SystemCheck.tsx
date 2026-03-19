@@ -234,7 +234,7 @@ export function SystemCheck(): JSX.Element {
                           
                           {wslInstallState === 'idle' && (
                             <button
-                              onClick={handleInstallWsl}
+                              onClick={() => openConfirm('wsl', { distro: 'Ubuntu' })}
                               className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 transition-colors"
                             >
                               {language === "es" ? "Instalar WSL (Recomendado)" : "Install WSL (Recommended)"}
@@ -289,7 +289,7 @@ export function SystemCheck(): JSX.Element {
                                 </span>
                               ) : (
                                 <button
-                                  onClick={() => handleInstallDep(item.id)}
+                                  onClick={() => openConfirm('dep', { depId: item.id })}
                                   className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded hover:bg-primary hover:text-primary-foreground transition-colors"
                                 >
                                   {language === "es" ? "Instalar Autom." : "Auto-Install"}

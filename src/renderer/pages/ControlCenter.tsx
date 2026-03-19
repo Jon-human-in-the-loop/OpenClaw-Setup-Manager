@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Play, Square, RotateCw, Settings, Terminal, ExternalLink, 
   Activity, CheckCircle2, XCircle, AlertCircle, RefreshCw, 
-  ChevronRight, Wrench, FileWarning, Search, Zap, Check, Download, Loader2, ScrollText 
+  ChevronRight, Wrench, FileWarning, Search, Zap, Check, Download, Loader2, ScrollText,
+  Circle
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -120,8 +121,22 @@ export function ControlCenter(): JSX.Element {
       setLoading(false);
     });
 
+    // Epic 12: Real-time health updates from background loop
+    window.api.system.onHealthUpdate((health) => {
+      setStatus(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          state: health.docker === "running" ? (health.openclaw === "running" ? "running" : "stopped") : "stopped",
+          dashboardReachable: health.openclaw === "running",
+          lastCheckedAt: new Date(health.timestamp).getTime()
+        };
+      });
+    });
+
     return () => {
       window.api.control.removeStatusListener();
+      window.api.system.removeHealthListener();
     };
   }, [refreshStatus]);
 

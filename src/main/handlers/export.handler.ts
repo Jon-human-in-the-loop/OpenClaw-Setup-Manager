@@ -1,7 +1,8 @@
-import { ipcMain, dialog } from "electron";
-import { join } from "node:path";
+import { ipcMain, dialog, app } from "electron";
+import { join, dirname } from "node:path";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, platform, arch, release } from "node:os";
+import { getAuditLog } from "../db";
 
 export function registerExportHandlers(): void {
   ipcMain.handle("export:script", async () => {
@@ -161,4 +162,64 @@ echo -e "Use '\${COMPOSE_CMD} logs -f' in \${INSTALL_DIR} to view logs."
       };
     }
   });
+
+  // Epic 7 (Ampliación): Export de Diagnóstico Mejorado
+  ipcMain.handle("diagnostic:export", async () => {
+    try {
+      const openclawDir = join(homedir(), ".openclaw");
+      const auditLogs = getAuditLog(50);
+      
+      const diagnosticData = {
+        timestamp: new Date().toISOString(),
+        appVersion: app.getVersion(),
+        platform: {
+          os: platform(),
+          arch: arch(),
+          release: release(),
+        },
+        openclaw: {
+          installed: existsSync(join(openclawDir, "docker-compose.yml")),
+          configExists: existsSync(join(openclawDir, ".env")),
+        },
+        auditLog: auditLogs.map(log => ({
+          ...log,
+          // Ensure details are safe (already handled in handlers, but double check)
+          detail: log.detail?.replace(/(KEY|TOKEN|SECRET|PASSWORD)=[^\\s]+/gi, "$1=********") || null
+        }))
+      };
+
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: "Export Diagnostic Report",
+        defaultPath: `openclaw-diagnostic-\${new Date().getTime()}.json`,
+        filters: [
+          { name: "JSON Report", extensions: ["json"] },
+          { name: "All Files", extensions: ["*"] }
+        ]
+      });
+
+      if (canceled || !filePath) {
+        return { success: false, message: "Export canceled" };
+      }
+
+      writeFileSync(filePath, JSON.stringify(diagnosticData, null, 2), "utf-8");
+      logAction("diagnostic:export", `path=\${filePath}`, "success");
+      
+      return { success: true, message: `Diagnóstico exportado a \${filePath}` };
+    } catch (error) {
+      console.error("Diagnostic export error:", error);
+      return { success: false, message: String(error) };
+    }
+  });
 }
+
+/**
+ * Internal helper to log actions (proxied from db to avoid circular deps if any, 
+ * although db doesn't import export.handler)
+ */
+function logAction(action: string, detail: string, result: string) {
+  try {
+    const { logAction: dbLog } = require("../db");
+    dbLog(action, detail, result);
+  } catch {}
+}
+

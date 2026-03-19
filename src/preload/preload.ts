@@ -16,6 +16,7 @@ import type {
   RepairIssue,
   RepairResult,
   OpenClawState,
+  HealthStatus,
 } from "../types";
 
 // Expose a safe, typed API to the renderer via window.api
@@ -25,6 +26,12 @@ const api = {
     check: () => ipcRenderer.invoke("system:check"),
     openUrl: (url: string) => ipcRenderer.invoke("system:open-url", url),
     reboot: () => ipcRenderer.invoke("system:reboot"),
+    onHealthUpdate: (callback: (status: HealthStatus) => void) => {
+      ipcRenderer.on("system:health-update", (_, data) => callback(data));
+    },
+    removeHealthListener: () => {
+      ipcRenderer.removeAllListeners("system:health-update");
+    },
   },
   wsl: {
     install: (distro: string) => ipcRenderer.invoke("wsl:install", distro),
@@ -186,6 +193,7 @@ const api = {
     read: (): Promise<OpenClawState> => ipcRenderer.invoke("state:read"),
     write: (partialState: Partial<OpenClawState>): Promise<{ success: boolean }> =>
       ipcRenderer.invoke("state:write", partialState),
+    getAuditLog: (limit?: number) => ipcRenderer.invoke("state:audit-log", limit),
   },
 
   // Autostart (Epic 5)
