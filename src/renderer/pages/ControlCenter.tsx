@@ -13,6 +13,7 @@ import type {
   ContainerState,
   ControlActionResult,
   RepairIssue,
+  AuditLogEntry,
 } from "../../types";
 
 // ─── Status Visual Mapping ───────────────────────────────────
@@ -66,6 +67,8 @@ export function ControlCenter(): JSX.Element {
   const [showLogs, setShowLogs] = useState(false);
   const [repairIssues, setRepairIssues] = useState<RepairIssue[]>([]);
   const [showRepair, setShowRepair] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [repairLoading, setRepairLoading] = useState(false);
 
   // Version Control
@@ -219,6 +222,18 @@ export function ControlCenter(): JSX.Element {
       }
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Error exporting diagnostics");
+    } finally {
+    }
+  };
+  
+  const handleViewAuditLogs = async () => {
+    setActionInProgress("logs");
+    try {
+      const logs = await window.api.state.getAuditLog(50);
+      setAuditLogs(logs);
+      setShowAuditLogs(true);
+    } catch (err) {
+      console.error("Failed to fetch audit logs:", err);
     } finally {
       setActionInProgress(null);
     }
@@ -476,36 +491,47 @@ export function ControlCenter(): JSX.Element {
         </div>
 
         {/* Logs & Repair quick actions */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() =>
               handleAction(() => window.api.control.logs(50), "logs")
             }
             disabled={!!actionInProgress}
-            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50 rounded-lg transition-colors"
+          >
+            <Terminal size={12} />
+            {language === "es" ? "Logs Docker" : "Docker Logs"}
+          </button>
+          
+          <button
+            onClick={handleViewAuditLogs}
+            disabled={!!actionInProgress}
+            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50 rounded-lg transition-colors"
           >
             <ScrollText size={12} />
-            {language === "es" ? "Logs" : "Logs"}
+            {language === "es" ? "Historial" : "History"}
           </button>
+
           <button
             onClick={handleDiagnose}
             disabled={repairLoading}
-            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50 rounded-lg transition-colors"
           >
             <Wrench size={12} />
             {language === "es" ? "Soporte" : "Support"}
           </button>
+
           <button
             onClick={handleExportDiagnostics}
             disabled={!!actionInProgress}
-            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted border border-border/50 rounded-lg transition-colors"
           >
             {actionInProgress === "export-diag" ? (
               <Loader2 size={12} className="animate-spin" />
             ) : (
               <Download size={12} />
             )}
-            {language === "es" ? "Diag" : "Diag"}
+            {language === "es" ? "Exportar Diagnóstico" : "Export Diagnostics"}
           </button>
         </div>
 
@@ -636,6 +662,63 @@ export function ControlCenter(): JSX.Element {
                 )}
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Audit Logs Modal */}
+        <AnimatePresence>
+          {showAuditLogs && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="no-drag w-full max-w-2xl bg-card border border-border rounded-xl shadow-2xl flex flex-col max-h-[80vh]"
+              >
+                <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+                  <div className="flex items-center gap-2 text-foreground font-semibold">
+                    <ScrollText size={18} className="text-primary" />
+                    {language === "es" ? "Historial de Acciones (Audit Log)" : "Action History (Audit Log)"}
+                  </div>
+                  <button
+                    onClick={() => setShowAuditLogs(false)}
+                    className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {auditLogs.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground italic">
+                      {language === "es" ? "No hay registros todavía." : "No logs available yet."}
+                    </div>
+                  ) : (
+                    auditLogs.map((log) => (
+                      <div key={log.id} className="p-3 rounded-lg border border-border bg-muted/10 flex flex-col gap-1 text-xs">
+                        <div className="flex items-center justify-between font-medium">
+                          <span className="uppercase text-[10px] tracking-wider text-primary">{log.action}</span>
+                          <span className="text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div className="text-foreground">{log.detail}</div>
+                        <div className={`font-mono ${log.result === 'success' || log.result === 'ok' ? 'text-green-500' : log.result === 'warning' ? 'text-amber-500' : 'text-destructive'}`}>
+                          Result: {log.result}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                
+                <div className="p-4 border-t border-border flex justify-end">
+                  <button
+                    onClick={() => setShowAuditLogs(false)}
+                    className="px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90"
+                  >
+                    {language === "es" ? "Cerrar" : "Close"}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </motion.div>

@@ -112,6 +112,11 @@ app.on("window-all-closed", () => {
   }
 });
 
+app.on("will-quit", () => {
+  stopHealthcheckLoop();
+  closeDb();
+});
+
 // Handle window controls via IPC
 ipcMain.on("window:minimize", () => mainWindow?.minimize());
 ipcMain.on("window:maximize", () => {
