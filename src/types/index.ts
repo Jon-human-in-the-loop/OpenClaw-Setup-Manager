@@ -234,6 +234,18 @@ export interface InstallationSession {
   discordToken?: string;
   slackToken?: string;
 
+  system: {
+    check: () => Promise<SystemCheckResult>;
+    openUrl: (url: string) => Promise<void>;
+    reboot: () => Promise<{ success: boolean; error?: string }>;
+  };
+  wsl: {
+    install: (distro: string) => Promise<{ success: boolean; error?: string }>;
+  };
+  deps: {
+    install: (depId: string) => Promise<{ success: boolean; error?: string }>;
+  };
+
   // Progress tracking
   completedSteps: WizardStep[];
   installationStartTime?: number;
@@ -333,6 +345,20 @@ export interface HealthcheckResult {
   responseTimeMs?: number;
   /** Código HTTP recibido */
   statusCode?: number;
-  /** Mensaje de error si falló */
   error?: string;
+}
+
+// ─── Platform State (Epic 1: Persistencia) ───────────────────────────────────
+
+export interface OpenClawState {
+  installed: boolean;
+  deploymentMode?: DeploymentType;
+  lastHealthCheck?: "ok" | "error" | "unknown";
+  lastError?: string;
+  /** El tag de la imagen de Docker actualmente instalada (e.g., 'latest', 'v1.2.0') */
+  version?: string;
+  agentConfig?: {
+    agentName: string;
+    primaryModel: string;
+  };
 }

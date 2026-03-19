@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { existsSync, writeFileSync, chmodSync } from "node:fs";
 import net from "node:net";
 import type { RepairIssue, RepairResult } from "../../types";
+import { updateState } from "./state.handler";
 
 // ─── HELPERS ─────────────────────────────────────────────────
 
@@ -230,6 +231,10 @@ function fixContainerMissing(): RepairResult {
       encoding: "utf8",
       timeout: 60000,
     });
+    
+    // Update state to reflect it's installed and working again
+    updateState({ installed: true }).catch(() => {});
+
     return {
       issue: "container-missing",
       success: true,

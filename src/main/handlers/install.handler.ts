@@ -5,6 +5,9 @@ import { writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import http from "node:http";
 import type { InstallConfig, HealthcheckResult } from "../../types";
+import { emit } from "../../utils/ipc";
+import { runCommand } from "../../utils/process";
+import { updateState } from "./state.handler";
 
 type InstallProgressEvent = {
   percent: number;
@@ -479,6 +482,17 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
               : `Dashboard operational (${dashboardHealth.responseTimeMs}ms)`,
         } satisfies InstallProgressEvent);
       }
+
+      // PASO 9: Guardar estado en memoria persistente
+      await updateState({
+        installed: true,
+        deploymentMode: config.deploymentType,
+        version: "latest", // Por defecto antes de Epic 4
+        agentConfig: {
+          agentName: config.agentName,
+          primaryModel: config.primaryModel,
+        },
+      });
 
       // ✅ Completado
       emit(win, "install:complete", {

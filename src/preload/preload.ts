@@ -15,16 +15,22 @@ import type {
   ControlActionResult,
   RepairIssue,
   RepairResult,
+  OpenClawState,
 } from "../types";
 
 // Expose a safe, typed API to the renderer via window.api
 const api = {
   // System checks
   system: {
-    check: (): Promise<SystemCheckResult> =>
-      ipcRenderer.invoke("system:check"),
-    openUrl: (url: string): Promise<void> =>
-      ipcRenderer.invoke("system:open-url", url),
+    check: () => ipcRenderer.invoke("system:check"),
+    openUrl: (url: string) => ipcRenderer.invoke("system:open-url", url),
+    reboot: () => ipcRenderer.invoke("system:reboot"),
+  },
+  wsl: {
+    install: (distro: string) => ipcRenderer.invoke("wsl:install", distro),
+  },
+  deps: {
+    install: (depId: string) => ipcRenderer.invoke("deps:install", depId),
   },
 
   // Installation
@@ -59,7 +65,7 @@ const api = {
     close: () => ipcRenderer.send("window:close"),
   },
 
-  // Auto-update
+  // Auto-update (App & Container)
   update: {
     check: (): Promise<UpdateCheckResult> =>
       ipcRenderer.invoke("update:check"),
@@ -69,6 +75,12 @@ const api = {
       ipcRenderer.invoke("update:install"),
     getVersion: (): Promise<{ version: string }> =>
       ipcRenderer.invoke("app:version"),
+    getAvailableVersions: (): Promise<{ success: boolean; tags: string[] }> =>
+      ipcRenderer.invoke("update:get-available-versions"),
+    getCurrentVersion: (): Promise<{ success: boolean; version: string | null }> =>
+      ipcRenderer.invoke("update:get-current-version"),
+    applyVersion: (newTag: string): Promise<{ success: boolean; message: string }> =>
+      ipcRenderer.invoke("update:apply-version", newTag),
     onAvailable: (callback: (info: UpdateInfo) => void) => {
       ipcRenderer.on("update:available", (_, data) => callback(data));
     },
@@ -139,6 +151,12 @@ const api = {
       ipcRenderer.invoke("control:open-dashboard"),
     openConfig: (): Promise<ControlActionResult> =>
       ipcRenderer.invoke("control:open-config"),
+    onStatusChanged: (callback: (status: ContainerStatus) => void) => {
+      ipcRenderer.on("control:status-changed", (_, data) => callback(data));
+    },
+    removeStatusListener: () => {
+      ipcRenderer.removeAllListeners("control:status-changed");
+    },
   },
 
   // Export Engine
@@ -156,6 +174,26 @@ const api = {
     fixAll: (): Promise<RepairResult[]> =>
       ipcRenderer.invoke("repair:fix-all"),
   },
+
+  // Diagnostics Export
+  diagnostic: {
+    export: (): Promise<ControlActionResult> =>
+      ipcRenderer.invoke("diagnostic:export"),
+  },
+
+  // State engine (Persistent Memoria)
+  state: {
+    read: (): Promise<OpenClawState> => ipcRenderer.invoke("state:read"),
+    write: (partialState: Partial<OpenClawState>): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke("state:write", partialState),
+  },
+
+  // Autostart (Epic 5)
+  autostart: {
+    getStatus: (): Promise<boolean> => ipcRenderer.invoke("autostart:get-status"),
+    toggle: (enable: boolean): Promise<{ success: boolean; enabled?: boolean; error?: string }> =>
+      ipcRenderer.invoke("autostart:toggle", enable),
+  }
 } as const;
 
 contextBridge.exposeInMainWorld("api", api);

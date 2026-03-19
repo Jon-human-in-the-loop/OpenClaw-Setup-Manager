@@ -7,9 +7,14 @@ import { registerConfigHandlers } from "./handlers/config.handler";
 import { registerUpdateHandlers, configureAutoUpdater } from "./handlers/update.handler";
 import { registerSessionHandlers, cleanupOldSessions } from "./handlers/session.handler";
 import { registerNetworkHandlers, startNetworkMonitoring } from "./handlers/network.handler";
-import { registerControlHandlers } from "./handlers/control.handler";
+import { registerControlHandlers, startControlMonitoring } from "./handlers/control.handler";
 import { registerRepairHandlers } from "./handlers/repair.handler";
 import { registerExportHandlers } from "./handlers/export.handler";
+import { registerStateHandlers } from "./handlers/state.handler";
+import { registerDiagnosticHandlers } from "./handlers/diagnostic.handler";
+import { registerAutostartHandlers } from "./handlers/autostart.handler";
+import { registerWslHandlers } from "./handlers/wsl.handler";
+import { registerDepsHandlers } from "./handlers/deps.handler";
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -71,6 +76,11 @@ app.whenReady().then(() => {
   registerControlHandlers();
   registerRepairHandlers();
   registerExportHandlers();
+  registerStateHandlers();
+  registerDiagnosticHandlers();
+  registerAutostartHandlers();
+  registerWslHandlers();
+  registerDepsHandlers();
 
   createWindow();
 
@@ -79,6 +89,9 @@ app.whenReady().then(() => {
 
   // Start network monitoring
   startNetworkMonitoring(mainWindow);
+  
+  // Start control monitoring
+  startControlMonitoring(mainWindow);
 
   // Cleanup old sessions (30+ days)
   cleanupOldSessions();

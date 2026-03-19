@@ -1,6 +1,14 @@
-import { autoUpdater } from "electron-updater";
 import { ipcMain, app } from "electron";
-import type { UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../../types";
+import { autoUpdater } from "electron-updater";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+import path from "node:path";
+import os from "node:os";
+import fs from "node:fs/promises";
+import https from "node:https";
+import type { UpdateInfo, UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../../types";
+
+const execAsync = promisify(exec);
 
 // Configure auto-updater
 export function configureAutoUpdater() {
@@ -127,6 +135,112 @@ export function registerUpdateHandlers() {
         code: error?.code,
       };
       mainWindow.webContents.send("update:error", errorEvent);
+    }
+  });
+}
+
+// ─── EPIC 4: CONTAINER VERSION CONTROL ───────────────────────
+
+/**
+ * Consulta Docker Hub para obtener los últimos tags de openclaw/agent
+ */
+function fetchDockerTags(repo: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const url = `https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=20`;
+    https.get(url, { headers: { "User-Agent": "OpenClaw-Installer/1.0" } }, (res) => {
+      let data = "";
+      res.on("data", chunk => data += chunk);
+      res.on("end", () => {
+        try {
+          if (res.statusCode === 200) {
+            const parsed = JSON.parse(data);
+            const tags = parsed.results
+              .map((r: any) => r.name)
+              .filter((tag: string) => tag !== "latest" && !tag.includes("dev")) // Filtrar tags inestables
+              // Sort tags roughly by date/version descending (Docker API usually returns newest first though)
+            resolve(tags);
+          } else {
+            resolve([]); // Fallback to empty if Hub is down or rate limited
+          }
+        } catch {
+          resolve([]);
+        }
+      });
+    }).on("error", () => resolve([]));
+  });
+}
+
+function getComposePath(): string {
+  return path.join(os.homedir(), ".openclaw", "docker-compose.yml");
+}
+
+export function registerVersionControlHandlers(): void {
+  /**
+   * update:get-available-versions - Consulta tags de Docker Hub
+   */
+  ipcMain.handle("update:get-available-versions", async () => {
+    try {
+      const tags = await fetchDockerTags("openclaw/agent");
+      if (!tags.includes("latest")) tags.unshift("latest"); // Siempre ofrecer latest
+      return { success: true, tags };
+    } catch {
+      return { success: false, tags: ["latest"] };
+    }
+  });
+
+  /**
+   * update:get-current-version - Lee el docker-compose.yml para ver qué tag está configurado
+   */
+  ipcMain.handle("update:get-current-version", async () => {
+    try {
+      const composePath = getComposePath();
+      if (!(await fs.exists(composePath))) return { success: false, version: null };
+      
+      const content = await fs.readFile(composePath, "utf-8");
+      // Buscar la linea de la imagen de openclaw
+      const match = content.match(/image:\s*openclaw\/agent:(.+)/);
+      return { success: true, version: match ? match[1].trim() : "latest" };
+    } catch {
+      return { success: false, version: null };
+    }
+  });
+
+  /**
+   * update:apply-version - Modifica el docker-compose.yml y levanta el nuevo contenedor
+   */
+  ipcMain.handle("update:apply-version", async (_, newTag: string) => {
+    try {
+      const composePath = getComposePath();
+      if (!(await fs.exists(composePath))) throw new Error("docker-compose.yml no encontrado");
+
+      let content = await fs.readFile(composePath, "utf-8");
+      
+      // Reemplaza el tag actual
+      content = content.replace(/image:\s*openclaw\/agent:[^\s]+/, `image: openclaw/agent:${newTag}`);
+      await fs.writeFile(composePath, content, "utf-8");
+
+      // Pull new image -> Stop -> Rm -> Up
+      const targetImage = `openclaw/agent:${newTag}`;
+      const workingDir = path.dirname(composePath);
+
+      // 1. Pull new image
+      const pullCmd = `docker pull ${targetImage}`;
+      console.log("Pulling openclaw:", pullCmd);
+      await execAsync(pullCmd, { cwd: workingDir, timeout: 120000 });
+
+      // 2. Stop and remove existing containers (if any)
+      const downCmd = `docker compose down`;
+      console.log("Stopping existing containers:", downCmd);
+      await execAsync(downCmd, { cwd: workingDir, timeout: 60000 });
+
+      // 3. Levantar con el nuevo docker-compose.yml
+      const upCmd = `docker compose up -d`;
+      console.log("Starting container with new version:", upCmd);
+      await execAsync(upCmd, { cwd: workingDir, timeout: 60000 });
+
+      return { success: true, message: `Actualizado a ${newTag}` };
+    } catch (err) {
+      return { success: false, message: err instanceof Error ? err.message : String(err) };
     }
   });
 }

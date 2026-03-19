@@ -1,19 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Play,
-  Square,
-  RotateCcw,
-  ExternalLink,
-  FolderOpen,
-  ScrollText,
-  Wrench,
-  RefreshCw,
-  CheckCircle2,
-  AlertTriangle,
-  XCircle,
-  Circle,
-  Loader2,
-  Download,
+import { 
+  Play, Square, RotateCw, Settings, Terminal, ExternalLink, 
+  Activity, CheckCircle2, XCircle, AlertCircle, RefreshCw, 
+  ChevronRight, Wrench, FileWarning, Search, Zap, Check, Download, Loader2, ScrollText 
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -78,6 +67,34 @@ export function ControlCenter(): JSX.Element {
   const [showRepair, setShowRepair] = useState(false);
   const [repairLoading, setRepairLoading] = useState(false);
 
+  // Version Control
+  const [availableVersions, setAvailableVersions] = useState<string[]>([]);
+  const [currentVersion, setCurrentVersion] = useState<string>("latest");
+  const [selectedVersion, setSelectedVersion] = useState<string>("latest");
+  const [isUpdatingVersion, setIsUpdatingVersion] = useState(false);
+
+  // Autostart
+  const [autostartEnabled, setAutostartEnabled] = useState(false);
+  const [autostartLoading, setAutostartLoading] = useState(false);
+
+  const fetchVersions = async () => {
+    try {
+      const [curRes, availRes] = await Promise.all([
+        window.api.update.getCurrentVersion(),
+        window.api.update.getAvailableVersions()
+      ]);
+      if (curRes.success && curRes.version) {
+        setCurrentVersion(curRes.version);
+        setSelectedVersion(curRes.version);
+      }
+      if (availRes.success && availRes.tags.length > 0) {
+        setAvailableVersions(availRes.tags);
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
   const refreshStatus = useCallback(async () => {
     try {
       const result = await window.api.control.status();
@@ -89,11 +106,23 @@ export function ControlCenter(): JSX.Element {
     }
   }, []);
 
-  // Auto-refresh every 10 seconds
+  // Initial fetch and listen for real-time updates
   useEffect(() => {
     refreshStatus();
-    const interval = setInterval(refreshStatus, 10000);
-    return () => clearInterval(interval);
+    fetchVersions();
+    
+    // Check initial autostart status
+    window.api.autostart.getStatus().then(setAutostartEnabled).catch(console.error);
+
+    // Listen for backend background monitoring events
+    window.api.control.onStatusChanged((newStatus) => {
+      setStatus(newStatus);
+      setLoading(false);
+    });
+
+    return () => {
+      window.api.control.removeStatusListener();
+    };
   }, [refreshStatus]);
 
   const handleAction = async (
@@ -160,6 +189,68 @@ export function ControlCenter(): JSX.Element {
       setActionMessage(err instanceof Error ? err.message : "Error exporting script");
     } finally {
       setActionInProgress(null);
+    }
+  };
+
+  const handleExportDiagnostics = async () => {
+    setActionInProgress("export-diag");
+    setActionMessage(null);
+    try {
+      const result = await window.api.diagnostic.export();
+      if (result.success && result.data) {
+        setActionMessage(language === "es" ? `Diagnóstico guardado en ${result.data}` : `Diagnostics saved to ${result.data}`);
+      } else if (result.message) {
+        setActionMessage(result.message);
+      }
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Error exporting diagnostics");
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleApplyVersion = async () => {
+    if (selectedVersion === currentVersion) return;
+    setIsUpdatingVersion(true);
+    setActionMessage(language === "es" ? `Actualizando a versión ${selectedVersion}... esto puede tardar unos minutos.` : `Updating to version ${selectedVersion}... this may take a few minutes.`);
+    try {
+      const result = await window.api.update.applyVersion(selectedVersion);
+      if (result.success) {
+        setCurrentVersion(selectedVersion);
+        setActionMessage(language === "es" ? `Actualizado a ${selectedVersion}` : `Updated to ${selectedVersion}`);
+        await refreshStatus();
+      } else {
+        setActionMessage(result.message);
+      }
+    } catch (err) {
+      setActionMessage(err instanceof Error ? err.message : "Error apply version");
+    } finally {
+      setIsUpdatingVersion(false);
+    }
+  };
+
+  const handleToggleAutostart = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const enable = e.target.checked;
+    setAutostartLoading(true);
+    try {
+      const result = await window.api.autostart.toggle(enable);
+      if (result.success && result.enabled !== undefined) {
+        setAutostartEnabled(result.enabled);
+        setActionMessage(
+          language === "es" 
+            ? `Arranque automático ${result.enabled ? "activado" : "desactivado"}`
+            : `Autostart ${result.enabled ? "enabled" : "disabled"}`
+        );
+      } else {
+        setActionMessage(result.error || "Error toggling autostart");
+        // Revert UI state if failed
+        setAutostartEnabled(!enable); 
+      }
+    } catch (err) {
+      setActionMessage(String(err));
+      setAutostartEnabled(!enable);
+    } finally {
+      setAutostartLoading(false);
     }
   };
 
@@ -232,13 +323,62 @@ export function ControlCenter(): JSX.Element {
             </div>
           )}
 
-          {/* Container Info */}
-          {status?.containerId && (
-            <p className="text-[10px] text-muted-foreground font-mono">
-              Container: {status.containerId}
-              {status.health && status.health !== "none" && ` · ${status.health}`}
-            </p>
-          )}
+            {/* Container Info & Version */}
+            <div className="flex flex-col gap-1 mt-1">
+              {status?.containerId && (
+                <p className="text-[10px] text-muted-foreground font-mono">
+                  Container: {status.containerId}
+                  {status.health && status.health !== "none" && ` · ${status.health}`}
+                </p>
+              )}
+              {availableVersions.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    {language === "es" ? "Versión:" : "Version:"}
+                  </span>
+                  <select 
+                    className="no-drag text-[10px] bg-background border border-border rounded px-1.5 py-0.5 max-w-[100px] text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    value={selectedVersion}
+                    onChange={(e) => setSelectedVersion(e.target.value)}
+                    disabled={isUpdatingVersion || !!actionInProgress}
+                  >
+                    {availableVersions.map(v => (
+                      <option key={v} value={v}>{v} {v === currentVersion ? "(Current)" : ""}</option>
+                    ))}
+                  </select>
+                  {selectedVersion !== currentVersion && (
+                    <button 
+                      onClick={handleApplyVersion}
+                      disabled={isUpdatingVersion || !!actionInProgress}
+                      className="no-drag text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {isUpdatingVersion ? (
+                        <Loader2 size={10} className="animate-spin inline" />
+                      ) : language === "es" ? "Aplicar" : "Apply"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+        {/* Settings / Autostart Section (Epic 5) */}
+        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+          <label className="flex items-center space-x-2 text-sm text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={autostartEnabled}
+              onChange={handleToggleAutostart}
+              disabled={autostartLoading}
+              className="no-drag accent-primary"
+            />
+            <span>
+              {language === "es" 
+                ? "Iniciar OpenClaw al arrancar el sistema" 
+                : "Start OpenClaw on system boot"}
+            </span>
+            {autostartLoading && <Loader2 size={12} className="animate-spin" />}
+          </label>
         </div>
 
         {/* Action Buttons */}
@@ -289,7 +429,7 @@ export function ControlCenter(): JSX.Element {
             {actionInProgress === "restart" ? (
               <Loader2 size={14} className="animate-spin" />
             ) : (
-              <RotateCcw size={14} />
+              <RotateCw size={14} />
             )}
             {language === "es" ? "Reiniciar" : "Restart"}
           </motion.button>
@@ -315,13 +455,13 @@ export function ControlCenter(): JSX.Element {
             }
             className="no-drag flex items-center justify-center gap-2 py-2.5 px-4 bg-muted text-foreground rounded-xl text-sm font-medium hover:bg-muted/80 transition-colors"
           >
-            <FolderOpen size={14} />
+            <Terminal size={14} />
             {language === "es" ? "Config" : "Config"}
           </motion.button>
         </div>
 
         {/* Logs & Repair quick actions */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() =>
               handleAction(() => window.api.control.logs(50), "logs")
@@ -330,7 +470,7 @@ export function ControlCenter(): JSX.Element {
             className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
           >
             <ScrollText size={12} />
-            {language === "es" ? "Ver Logs" : "View Logs"}
+            {language === "es" ? "Logs" : "Logs"}
           </button>
           <button
             onClick={handleDiagnose}
@@ -338,7 +478,19 @@ export function ControlCenter(): JSX.Element {
             className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
           >
             <Wrench size={12} />
-            {language === "es" ? "Diagnosticar" : "Diagnose"}
+            {language === "es" ? "Soporte" : "Support"}
+          </button>
+          <button
+            onClick={handleExportDiagnostics}
+            disabled={!!actionInProgress}
+            className="no-drag flex items-center justify-center gap-2 py-2 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          >
+            {actionInProgress === "export-diag" ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Download size={12} />
+            )}
+            {language === "es" ? "Diag" : "Diag"}
           </button>
         </div>
 
@@ -444,7 +596,7 @@ export function ControlCenter(): JSX.Element {
                         {issue.severity === "critical" ? (
                           <XCircle size={12} className="text-red-400" />
                         ) : (
-                          <AlertTriangle size={12} className="text-yellow-400" />
+                          <AlertCircle size={12} className="text-yellow-400" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

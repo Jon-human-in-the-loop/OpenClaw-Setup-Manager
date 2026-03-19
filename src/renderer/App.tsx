@@ -22,14 +22,22 @@ function AppContent(): JSX.Element {
   useEffect(() => {
     const checkExistingInstallation = async () => {
       try {
+        // 1. Comprobar memoria persistente
+        const state = await window.api.state.read();
+        if (state.installed) {
+          goTo("control-center");
+          return;
+        }
+
+        // 2. Fallback (recuperación de estado si state.json se borró pero Docker sigue vivo)
         const status = await window.api.control.status();
-        // If container exists in any state, go to Control Center
         if (status.state !== "not-found") {
+          await window.api.state.write({ installed: true, version: "unknown" });
           goTo("control-center");
           return;
         }
       } catch {
-        // control:status not available or failed — continue with wizard
+        // APIs fallaron o no están disponibles — continuar con wizard normal
       }
 
       // If no existing installation, check for active session

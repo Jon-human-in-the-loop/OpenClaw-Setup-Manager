@@ -16,6 +16,48 @@ export function SystemCheck(): JSX.Element {
   const [checking, setChecking] = useState(true);
   const [result, setResult] = useState<SystemCheckResult | null>(null);
 
+  // WSL Installation State
+  const [wslInstallState, setWslInstallState] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
+  const [wslError, setWslError] = useState<string | null>(null);
+
+  const handleInstallWsl = async () => {
+    setWslInstallState('installing');
+    setWslError(null);
+    try {
+      const wslResult = await window.api.wsl.install("Ubuntu");
+      if (wslResult.success) {
+        setWslInstallState('success');
+      } else {
+        setWslError(wslResult.error ?? "Failed to install WSL");
+        setWslInstallState('error');
+      }
+    } catch (e) {
+      setWslError(String(e));
+      setWslInstallState('error');
+    }
+  };
+
+  // Generic Dependencies Installation State
+  const [installingDeps, setInstallingDeps] = useState<Record<string, 'idle'|'installing'|'success'|'error'>>({});
+
+  const handleInstallDep = async (depId: string) => {
+    setInstallingDeps(prev => ({ ...prev, [depId]: 'installing' }));
+    setWslError(null);
+    try {
+      const res = await window.api.deps.install(depId);
+      if (res.success) {
+        setInstallingDeps(prev => ({ ...prev, [depId]: 'success' }));
+        runCheck(); 
+      } else {
+        setWslError(res.error ?? `Error al instalar ${depId}`);
+        setInstallingDeps(prev => ({ ...prev, [depId]: 'error' }));
+      }
+    } catch (e) {
+      setWslError(String(e));
+      setInstallingDeps(prev => ({ ...prev, [depId]: 'error' }));
+    }
+  };
+
   const runCheck = async () => {
     setChecking(true);
     setResult(null);
@@ -134,11 +176,85 @@ export function SystemCheck(): JSX.Element {
                         </div>
                       </div>
 
-                      {item.fixUrl && item.status !== "ready" && (
-                        <div className="flex items-center justify-end mt-1">
+                      {item.id === "wsl2" && item.status !== "ready" && (
+                        <div className="mt-3 p-3 bg-secondary/30 border border-border rounded-lg">
+                          <h4 className="text-sm font-semibold mb-1 text-foreground">
+                            {language === "es" ? "Instalación Automática Recomendada" : "Recommended Auto-Install"}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            {language === "es" 
+                              ? "OpenClaw instalará el Subsistema de Windows para Linux (Ubuntu). Aparecerá una ventana de permisos de Administrador."
+                              : "OpenClaw will install the Windows Subsystem for Linux (Ubuntu). An Administrator prompt will appear."}
+                          </p>
+                          
+                          {wslInstallState === 'idle' && (
+                            <button
+                              onClick={handleInstallWsl}
+                              className="px-4 py-2 bg-primary text-primary-foreground text-xs font-semibold rounded-md hover:bg-primary/90 transition-colors"
+                            >
+                              {language === "es" ? "Instalar WSL (Recomendado)" : "Install WSL (Recommended)"}
+                            </button>
+                          )}
+                          
+                          {wslInstallState === 'installing' && (
+                            <div className="flex items-center gap-2 text-xs text-primary font-medium">
+                              <Loader2 size={14} className="animate-spin" />
+                              {language === "es" 
+                                ? "Instalando... Acepta los permisos de Administrador y espera a que termine la consola."
+                                : "Installing... Accept the Administrator prompt and wait for the console to finish."}
+                            </div>
+                          )}
+                          
+                          {wslInstallState === 'success' && (
+                            <div className="flex flex-col gap-3">
+                              <span className="text-xs text-green-500 font-medium">
+                                {language === "es" 
+                                  ? "¡WSL Instalado! Debes reiniciar tu PC para aplicar los cambios y luego volver a abrir el instalador."
+                                  : "WSL Installed! You must restart your PC to apply changes, then reopen the installer."}
+                              </span>
+                              <button
+                                onClick={() => window.api.system.reboot()}
+                                className="px-4 py-2 bg-destructive text-destructive-foreground text-xs font-semibold rounded-md hover:bg-destructive/90 self-start transition-colors"
+                              >
+                                {language === "es" ? "Reiniciar PC Ahora" : "Restart PC Now"}
+                              </button>
+                            </div>
+                          )}
+                          
+                          {wslInstallState === 'error' && (
+                            <div className="text-xs text-destructive mt-2 font-medium">
+                              Error: {wslError}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {item.fixUrl && item.status !== "ready" && item.id !== "wsl2" && (
+                        <div className="flex items-center justify-end mt-2 gap-3">
+                          {['node', 'git', 'ollama', 'docker'].includes(item.id) && result?.platform === 'win32' && (
+                            <div className="flex items-center gap-2">
+                              {installingDeps[item.id] === 'installing' ? (
+                                <div className="flex items-center gap-1 text-xs text-primary font-medium">
+                                  <Loader2 size={12} className="animate-spin" />
+                                  {language === "es" ? "Instalando..." : "Installing..."}
+                                </div>
+                              ) : installingDeps[item.id] === 'success' ? (
+                                <span className="text-xs text-green-500 font-medium tracking-tight">
+                                  {language === "es" ? "¡Instalado!" : "Installed!"}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleInstallDep(item.id)}
+                                  className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded hover:bg-primary hover:text-primary-foreground transition-colors"
+                                >
+                                  {language === "es" ? "Instalar Autom." : "Auto-Install"}
+                                </button>
+                              )}
+                            </div>
+                          )}
                           <button
                             onClick={() => window.api.system.openUrl(item.fixUrl!)}
-                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
                           >
                             <ExternalLink size={10} />
                             {t(language, "common.openLink")}

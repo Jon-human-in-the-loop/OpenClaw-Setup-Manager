@@ -15,14 +15,46 @@ export function registerExportHandlers(): void {
       }
 
       // Read current configuration
+      const rawEnvContent = readFileSync(envPath, "utf-8");
+      
+      // Mask secrets in .env
+      const envContent = rawEnvContent
+        .split("\\n")
+        .map(line => {
+          if (line.trim().startsWith("#") || !line.includes("=")) return line;
+          const [key, ...rest] = line.split("=");
+          const val = rest.join("=");
+          if (key.includes("KEY") || key.includes("TOKEN") || key.includes("SECRET") || key.includes("PASSWORD")) {
+            return `${key}=******** (Hidden for security) ********`;
+          }
+          return line;
+        })
+        .join("\\n");
+        
       const composeContent = readFileSync(composePath, "utf-8");
-      const envContent = readFileSync(envPath, "utf-8");
       
       // Try to read openclaw.json if it exists
       let jsonContent = "";
       const jsonPath = join(openclawDir, "openclaw.json");
       if (existsSync(jsonPath)) {
-        jsonContent = readFileSync(jsonPath, "utf-8");
+        const rawJson = readFileSync(jsonPath, "utf-8");
+        try {
+            const parsed = JSON.parse(rawJson);
+            // Mask gateway token
+            if (parsed.gateway?.auth?.token) {
+                parsed.gateway.auth.token = "******** (Hidden for security) ********";
+            }
+            // Mask channel tokens
+            if (parsed.channels?.telegram?.botToken) {
+                parsed.channels.telegram.botToken = "******** (Hidden for security) ********";
+            }
+            if (parsed.channels?.discord?.token) {
+                parsed.channels.discord.token = "******** (Hidden for security) ********";
+            }
+            jsonContent = JSON.stringify(parsed, null, 2);
+        } catch {
+            jsonContent = rawJson; // fallback if invalid JSON
+        }
       }
 
       // Prepare the bash script content

@@ -6,6 +6,66 @@ import { existsSync } from "node:fs";
 import http from "node:http";
 import type { ContainerStatus, ContainerState, ControlActionResult } from "../../types";
 
+// ─── BACKGROUND MONITORING ───────────────────────────────────
+
+let monitoringInterval: NodeJS.Timeout | null = null;
+let lastStatusStr: string | null = null;
+
+export function startControlMonitoring(win: Electron.BrowserWindow | null) {
+  if (monitoringInterval) clearInterval(monitoringInterval);
+
+  monitoringInterval = setInterval(async () => {
+    if (!win || win.isDestroyed()) return;
+
+    try {
+      const container = inspectContainer();
+      
+      // Only do HTTP checks if container is running to avoid unnecessary timeouts
+      let dashboardReachable = false;
+      let gatewayReachable = false;
+      
+      if (container.state === "running") {
+        [dashboardReachable, gatewayReachable] = await Promise.all([
+          quickHttpCheck("http://127.0.0.1:3000/healthz"),
+          quickHttpCheck("http://127.0.0.1:18789"),
+        ]);
+      }
+
+      const status: ContainerStatus = {
+        state: container.state,
+        uptime: container.uptime,
+        containerId: container.containerId,
+        health: container.health as ContainerStatus["health"],
+        dashboardReachable,
+        gatewayReachable,
+        lastCheckedAt: Date.now(),
+      };
+
+      // Only emit if state has meaningfully changed (ignoring lastCheckedAt and minor uptime changes)
+      const currentStatusStr = JSON.stringify({
+        state: status.state,
+        health: status.health,
+        dashboardReachable: status.dashboardReachable,
+        gatewayReachable: status.gatewayReachable,
+      });
+
+      if (currentStatusStr !== lastStatusStr) {
+        lastStatusStr = currentStatusStr;
+        win.webContents.send("control:status-changed", status);
+      }
+    } catch (err) {
+      console.error("Control monitoring error:", err);
+    }
+  }, 15000); // 15 seconds
+}
+
+export function stopControlMonitoring() {
+  if (monitoringInterval) {
+    clearInterval(monitoringInterval);
+    monitoringInterval = null;
+  }
+}
+
 // ─── HELPERS ─────────────────────────────────────────────────
 
 const CONTAINER_NAME = "openclaw-agent";
@@ -198,15 +258,24 @@ export function registerControlHandlers(): void {
    */
   ipcMain.handle("control:logs", async (_, lines = 100): Promise<ControlActionResult> => {
     try {
-      const logs = execSync(`docker logs --tail ${lines} ${CONTAINER_NAME}`, {
+      const logsRaw = execSync(`docker logs --tail ${lines} ${CONTAINER_NAME}`, {
         encoding: "utf8",
         timeout: 10000,
       });
+
+      // Simple masking for common token formats (Bearer tokens, API keys)
+      // This protects secrets from showing up directly in the UI if OpenClaw prints them
+      const maskedLogs = logsRaw
+        .replace(/(Bearer\\s+)[a-zA-Z0-9\\-_\\.]+/g, "$1********")
+        .replace(/(token["']?\\s*:\\s*["'])[a-zA-Z0-9\\-_]+(["'])/g, "$1********$2")
+        .replace(/(api[_-]?key["']?\\s*:\\s*["'])[a-zA-Z0-9\\-_]+(["'])/gi, "$1********$2")
+        .replace(/(sk-[a-zA-Z0-9]{40,})/g, "sk-********");
+
       return {
         success: true,
         action: "logs",
         message: `Últimas ${lines} líneas de logs`,
-        data: logs,
+        data: maskedLogs,
       };
     } catch (err) {
       return {
