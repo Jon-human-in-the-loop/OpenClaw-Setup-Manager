@@ -23,7 +23,8 @@ export type WizardStep =
   | "channels"
   | "credentials"
   | "installing"
-  | "success";
+  | "success"
+  | "control-center";  // NEW: post-install control panel
 
 export const WIZARD_STEPS: WizardStep[] = [
   "welcome",

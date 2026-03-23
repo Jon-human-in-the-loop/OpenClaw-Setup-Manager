@@ -1,0 +1,17 @@
+[33mcommit f0aa895591059984999da561c03bddd379e29fdb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/epic-8-9-auto-installers[m[33m, [m[1;31morigin/feat/epic-8-9-auto-installers[m[33m)[m
+Author: Jon <jon@example.com>
+Date:   Thu Mar 19 15:44:17 2026 +0000
+
+    feat: Epic 10-13 Stability & Safety Layer (SQLite, Healthcheck, Auto-Rollback, Confirmations)
+
+[33mcommit 2a43c713d283bb156c0a6bb4a91e69ba520a5f1b[m
+Author: Jon <jon@example.com>
+Date:   Thu Mar 19 15:10:13 2026 +0000
+
+    feat: Epic 8 and 9 Auto Installers
+
+[33mcommit c7e31ffe86721b48950175701df81f44ce7d7258[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Author: Jon <jon@example.com>
+Date:   Wed Mar 18 08:46:53 2026 +0000
+
+    feat: OpenClaw Control Center v1 refactor

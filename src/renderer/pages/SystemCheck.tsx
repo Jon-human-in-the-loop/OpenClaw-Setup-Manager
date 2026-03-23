@@ -25,6 +25,8 @@ export function SystemCheck(): JSX.Element {
   const [checking, setChecking] = useState(true);
   const [result, setResult] = useState<SystemCheckResult | null>(null);
   const [items, setItems] = useState<CheckItem[]>([]);
+  const [installingDocker, setInstallingDocker] = useState(false);
+  const [installDockerMsg, setInstallDockerMsg] = useState<string | null>(null);
 
   const runCheck = async () => {
     setChecking(true);
@@ -98,18 +100,39 @@ export function SystemCheck(): JSX.Element {
         id: "docker",
         labelKey: "systemcheck.docker",
         status: res.platformCapabilities.docker.installed
-          ? res.platformCapabilities.docker.running ? "ok" : "warn"
+          ? res.platformCapabilities.docker.running ? "ok" : "error"
           : "warn",
         detail: res.platformCapabilities.docker.installed
           ? res.platformCapabilities.docker.running
             ? t(language, "systemcheck.docker.ok", { version: res.platformCapabilities.docker.version ?? "" })
             : t(language, "systemcheck.docker.installed_not_running")
           : t(language, "systemcheck.docker.missing"),
-        fixKey: res.platformCapabilities.docker.running ? undefined : "systemcheck.fix.docker",
+        fixKey: res.platformCapabilities.docker.installed
+          ? res.platformCapabilities.docker.running
+            ? undefined
+            : "systemcheck.fix.docker.notrunning"
+          : "systemcheck.fix.docker",
         fixUrl: res.platformCapabilities.docker.installed ? undefined : "https://www.docker.com/products/docker-desktop",
       },
     ];
     setItems(built);
+  };
+
+  const handleInstallDocker = async () => {
+    setInstallingDocker(true);
+    setInstallDockerMsg(null);
+    try {
+      const res = await window.api.system.installDocker();
+      setInstallDockerMsg(res.message);
+      if (res.success) {
+        // Wait a moment then re-run the check
+        setTimeout(() => runCheck(), 2000);
+      }
+    } catch (e) {
+      setInstallDockerMsg("Error inesperado al intentar instalar Docker.");
+    } finally {
+      setInstallingDocker(false);
+    }
   };
 
   useEffect(() => {
@@ -173,18 +196,37 @@ export function SystemCheck(): JSX.Element {
                 </div>
 
                 {item.fixKey && (
-                  <div className="flex items-center justify-between mt-1">
+                  <div className="flex flex-col gap-1.5 mt-1">
                     <p className="text-xs text-destructive">
                       {t(language, item.fixKey as Parameters<typeof t>[1])}
                     </p>
-                    {item.fixUrl && (
-                      <button
-                        onClick={() => window.api.system.openUrl(item.fixUrl!)}
-                        className="flex items-center gap-1 text-xs text-primary hover:underline ml-2"
-                      >
-                        <ExternalLink size={10} />
-                        {t(language, "common.openLink")}
-                      </button>
+                    <div className="flex items-center gap-2">
+                      {item.fixUrl && (
+                        <button
+                          onClick={() => window.api.system.openUrl(item.fixUrl!)}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <ExternalLink size={10} />
+                          {t(language, "common.openLink")}
+                        </button>
+                      )}
+                      {/* Auto-install button: only for Docker missing on Linux/macOS */}
+                      {item.id === "docker" && !result?.platformCapabilities.docker.installed && (
+                        <button
+                          onClick={handleInstallDocker}
+                          disabled={installingDocker}
+                          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                        >
+                          {installingDocker
+                            ? <><Loader2 size={10} className="animate-spin" /> Instalando...</>
+                            : "⚡ Instalar Docker Automáticamente"}
+                        </button>
+                      )}
+                    </div>
+                    {installDockerMsg && item.id === "docker" && (
+                      <p className={`text-xs mt-0.5 ${installDockerMsg.toLowerCase().includes("error") ? "text-destructive" : "text-green-500"}`}>
+                        {installDockerMsg}
+                      </p>
                     )}
                   </div>
                 )}

@@ -12,6 +12,7 @@ import { Channels } from "@/pages/Channels";
 import { ChannelCredentials } from "@/pages/ChannelCredentials";
 import { Installing } from "@/pages/Installing";
 import { Success } from "@/pages/Success";
+import { ControlCenter } from "@/pages/ControlCenter";
 
 const PAGE_COMPONENTS = {
   "welcome": Welcome,
@@ -26,6 +27,7 @@ const PAGE_COMPONENTS = {
   "credentials": ChannelCredentials,
   "installing": Installing,
   "success": Success,
+  "control-center": ControlCenter,
 } as const;
 
 export function Wizard(): JSX.Element {

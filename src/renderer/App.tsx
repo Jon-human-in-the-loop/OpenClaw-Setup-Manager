@@ -18,9 +18,29 @@ function AppContent(): JSX.Element {
   const [showHistory, setShowHistory] = useState(false);
   const { goTo, setAgentName, setPrimaryModel } = useInstallation();
 
-  // Check for active session on mount
+  // Check for existing OpenClaw installation → go to Control Center
   useEffect(() => {
-    const checkForActiveSession = async () => {
+    const checkExistingInstallation = async () => {
+      try {
+        // 1. Comprobar memoria persistente
+        const state = await window.api.state.read();
+        if (state.installed) {
+          goTo("control-center");
+          return;
+        }
+
+        // 2. Fallback (recuperación de estado si state.json se borró pero Docker sigue vivo)
+        const status = await window.api.control.status();
+        if (status.state !== "not-found") {
+          await window.api.state.write({ installed: true, version: "unknown" });
+          goTo("control-center");
+          return;
+        }
+      } catch {
+        // APIs fallaron o no están disponibles — continuar con wizard normal
+      }
+
+      // If no existing installation, check for active session
       try {
         const activeSession = await window.api.session.loadActive();
         if (activeSession && activeSession.status === "active") {
@@ -31,8 +51,8 @@ function AppContent(): JSX.Element {
       }
     };
 
-    checkForActiveSession();
-  }, []);
+    checkExistingInstallation();
+  }, [goTo]);
 
   const handleResume = async (session: InstallationSession) => {
     try {
@@ -70,7 +90,7 @@ function AppContent(): JSX.Element {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background overflow-hidden">
+    <div className="flex flex-col absolute inset-0 bg-background overflow-hidden">
       <ConnectionStatus />
       <TitleBar />
       <main className="flex-1 overflow-hidden">

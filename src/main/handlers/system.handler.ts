@@ -207,4 +207,39 @@ export function registerSystemHandlers(): void {
     const { shell } = await import("electron");
     shell.openExternal(url);
   });
+
+  ipcMain.handle("system:install-docker", async (): Promise<{ success: boolean; message: string }> => {
+    const platform = process.platform;
+
+    // Windows: just open Docker Desktop download page — no silent install path
+    if (platform === "win32") {
+      const { shell } = await import("electron");
+      await shell.openExternal("https://www.docker.com/products/docker-desktop");
+      return { success: true, message: "Abriendo página de descarga de Docker Desktop..." };
+    }
+
+    // Linux / macOS: use sudo-prompt to run the official install script
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const sudoPrompt = require("sudo-prompt") as {
+      exec: (cmd: string, opts: { name: string }, cb: (err?: Error, stdout?: string) => void) => void;
+    };
+
+    const installCmd = platform === "linux"
+      ? "curl -fsSL https://get.docker.com | sh && usermod -aG docker $SUDO_USER"
+      : "brew install --cask docker"; // macOS via Homebrew
+
+    return new Promise((resolve) => {
+      sudoPrompt.exec(
+        installCmd,
+        { name: "OpenClaw — Instalador de Docker" },
+        (err) => {
+          if (err) {
+            resolve({ success: false, message: err.message || "Error al instalar Docker." });
+          } else {
+            resolve({ success: true, message: "Docker instalado correctamente. Reinicia la sesión para aplicar los permisos del grupo." });
+          }
+        }
+      );
+    });
+  });
 }

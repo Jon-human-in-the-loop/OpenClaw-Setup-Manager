@@ -3,7 +3,11 @@ import { spawn } from "node:child_process";
 import { homedir, platform } from "node:os";
 import { writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
-import type { InstallConfig } from "../../types";
+import http from "node:http";
+import type { InstallConfig, HealthcheckResult } from "../../types";
+import { emit } from "../../utils/ipc";
+import { updateState } from "./state.handler";
+import { saveSecret, getSecret } from "../keychain";
 
 type InstallProgressEvent = {
   percent: number;
@@ -21,12 +25,13 @@ function runCommand(
   args: string[],
   startPercent: number,
   endPercent: number,
-  label: string
+  label: string,
+  extraEnv: Record<string, string> = {}
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       shell: true,
-      env: { ...process.env, FORCE_COLOR: "0" },
+      env: { ...process.env, FORCE_COLOR: "0", ...extraEnv },
     });
 
     child.stdout.on("data", (data: Buffer) => {
@@ -85,7 +90,6 @@ async function installDocker(
   const os = platform();
 
   if (os === "darwin") {
-    // macOS: Download Docker Desktop
     await runCommand(
       win,
       "curl",
@@ -128,7 +132,6 @@ async function installDocker(
       "Finalizando instalación..."
     );
   } else if (os === "win32") {
-    // Windows (WSL2): Install docker.io
     await runCommand(
       win,
       "powershell",
@@ -141,7 +144,6 @@ async function installDocker(
       "Instalando Docker en WSL2..."
     );
   } else {
-    // Linux: Official Docker install script
     await runCommand(
       win,
       "curl",
@@ -165,7 +167,6 @@ async function installDocker(
 // ─── CONFIGURATION GENERATORS ────────────────────────────────
 
 function generateGatewayToken(): string {
-  // Generar token hex seguro (compatible con CLI)
   return Array.from(crypto.getRandomValues(new Uint8Array(32)))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -252,12 +253,15 @@ services:
       - "127.0.0.1:18789:18789"
       - "127.0.0.1:3000:3000"
 
+    # Environment variables
+    environment:
+      - LLM_API_KEY=\${LLM_API_KEY}
+
     # Volumes
     volumes:
       - \${HOME}/.openclaw/openclaw.json:/home/node/.openclaw/openclaw.json:ro
       - \${HOME}/.openclaw/workspace:/home/node/.openclaw/workspace
       - \${HOME}/.openclaw/skills:/home/node/.openclaw/skills
-      - \${HOME}/.openclaw/.env:/home/node/.openclaw/.env:ro
 
     # SECURITY: Read-only filesystem
     read_only: true
@@ -277,6 +281,75 @@ services:
       retries: 3
       start_period: 30s
 `;
+}
+
+// ─── HEALTHCHECK ─────────────────────────────────────────────
+
+/**
+ * Realiza un healthcheck HTTP real contra un endpoint local.
+ * Reintenta hasta `maxRetries` veces con `intervalMs` entre intentos.
+ */
+export function performHealthcheck(
+  url: string,
+  maxRetries = 12,
+  intervalMs = 5000
+): Promise<HealthcheckResult> {
+  return new Promise((resolve) => {
+    let attempts = 0;
+
+    function attempt(): void {
+      attempts++;
+      const startTime = Date.now();
+
+      const req = http.get(url, { timeout: 5000 }, (res) => {
+        const responseTimeMs = Date.now() - startTime;
+        const statusCode = res.statusCode ?? 0;
+        res.resume();
+
+        if (statusCode >= 200 && statusCode < 400) {
+          resolve({
+            healthy: true,
+            responseTimeMs,
+            statusCode,
+          });
+        } else if (attempts < maxRetries) {
+          setTimeout(attempt, intervalMs);
+        } else {
+          resolve({
+            healthy: false,
+            responseTimeMs,
+            statusCode,
+            error: `Received status ${statusCode} after ${attempts} attempts`,
+          });
+        }
+      });
+
+      req.on("error", (err) => {
+        if (attempts < maxRetries) {
+          setTimeout(attempt, intervalMs);
+        } else {
+          resolve({
+            healthy: false,
+            error: `${err.message} (after ${attempts} attempts)`,
+          });
+        }
+      });
+
+      req.on("timeout", () => {
+        req.destroy();
+        if (attempts < maxRetries) {
+          setTimeout(attempt, intervalMs);
+        } else {
+          resolve({
+            healthy: false,
+            error: `Timeout after ${attempts} attempts`,
+          });
+        }
+      });
+    }
+
+    attempt();
+  });
 }
 
 // ─── MAIN INSTALLATION HANDLER ───────────────────────────────
@@ -339,17 +412,17 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
       writeFileSync(configPath, configJson, "utf-8");
       chmodSync(configPath, 0o600);
 
-      // Guardar token
       const tokenPath = join(openClawDir, ".gateway-token");
       writeFileSync(tokenPath, gatewayToken, "utf-8");
       chmodSync(tokenPath, 0o600);
 
-      // PASO 5: Escribir .env con API keys
+      // PASO 5: Guardar API keys en el Keychain del Sistema
       if (config.apiKey) {
-        const envContent = `LLM_API_KEY=${config.apiKey}`;
-        const envPath = join(openClawDir, ".env");
-        writeFileSync(envPath, envContent, "utf-8");
-        chmodSync(envPath, 0o600);
+        saveSecret("LLM_API_KEY", config.apiKey);
+        // La apiKey ya no se escribe en texto plano (.env). Se inyecta en runtime.
+      } else {
+        // Asegurar que si hacemos reinstall no le pasamos una key antigua si el usuario la borró
+        // (Aunque esto depende de la info del frontend)
       }
 
       // PASO 6: Escribir docker-compose.yml
@@ -375,14 +448,30 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
             : "Starting container...",
       } satisfies InstallProgressEvent);
 
+      const envVars = {
+        HOME: homeDir,
+        LLM_API_KEY: getSecret("LLM_API_KEY") || "",
+      };
+
       await runCommand(
         win,
         "docker",
         ["compose", "-f", composePath, "pull"],
         70,
-        75,
-        config.language === "es" ? "Descargando imagen..." : "Downloading image..."
+        85,
+        config.language === "es"
+          ? "Descargando imagen..."
+          : "Downloading image...",
+        envVars
       );
+
+      emit(win, "install:progress", {
+        percent: 85,
+        message:
+          config.language === "es"
+            ? "Levantando servicios..."
+            : "Starting services...",
+      } satisfies InstallProgressEvent);
 
       await runCommand(
         win,
@@ -393,17 +482,38 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
         config.language === "es" ? "Levantando contenedor..." : "Starting container..."
       );
 
-      // PASO 8: Esperar health check
+      // PASO 8: Healthcheck real (reemplaza el antiguo setTimeout)
       emit(win, "install:progress", {
-        percent: 90,
+        percent: 88,
         message:
           config.language === "es"
-            ? "Esperando OpenClaw..."
-            : "Waiting for OpenClaw...",
+            ? "Verificando que OpenClaw responda..."
+            : "Verifying OpenClaw is responding...",
       } satisfies InstallProgressEvent);
 
-      // Simple wait (en una app real, hacer proper health check)
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      const dashboardHealth = await performHealthcheck("http://127.0.0.1:3000/healthz", 12, 5000);
+      const gatewayHealth = await performHealthcheck("http://127.0.0.1:18789", 3, 2000);
+
+      if (dashboardHealth.healthy) {
+        emit(win, "install:progress", {
+          percent: 95,
+          message:
+            config.language === "es"
+              ? `Dashboard operativo (${dashboardHealth.responseTimeMs}ms)`
+              : `Dashboard operational (${dashboardHealth.responseTimeMs}ms)`,
+        } satisfies InstallProgressEvent);
+      }
+
+      // PASO 9: Guardar estado en memoria persistente
+      await updateState({
+        installed: true,
+        deploymentMode: config.deploymentType,
+        version: "latest", // Por defecto antes de Epic 4
+        agentConfig: {
+          agentName: config.agentName,
+          primaryModel: config.primaryModel,
+        },
+      });
 
       // ✅ Completado
       emit(win, "install:complete", {
@@ -411,8 +521,16 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
         dashboardUrl: "http://127.0.0.1:3000",
         message:
           config.language === "es"
-            ? "¡OpenClaw instalado en Docker correctamente!"
-            : "OpenClaw installed in Docker successfully!",
+            ? dashboardHealth.healthy
+              ? "¡OpenClaw instalado y verificado correctamente!"
+              : "OpenClaw instalado. Dashboard aún iniciando — puede tardar unos segundos más."
+            : dashboardHealth.healthy
+              ? "OpenClaw installed and verified successfully!"
+              : "OpenClaw installed. Dashboard still starting — may take a few more seconds.",
+        healthcheck: {
+          dashboard: dashboardHealth,
+          gateway: gatewayHealth,
+        },
       });
     } catch (error) {
       emit(win, "install:complete", {

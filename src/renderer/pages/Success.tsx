@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ExternalLink, BookOpen, Copy, Check } from "lucide-react";
+import { ExternalLink, BookOpen, Copy, Check, Gauge } from "lucide-react";
 import { useState } from "react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -11,7 +11,7 @@ const DASHBOARD_URL = "http://127.0.0.1:18789";
 const DOCS_URL = "https://github.com/openclaw/openclaw";
 
 export function Success(): JSX.Element {
-  const { agentName, primaryModel, channels, dashboardUrl } = useInstallation();
+  const { agentName, primaryModel, channels, dashboardUrl, goTo } = useInstallation();
   const { language } = useLanguage();
   const [copied, setCopied] = useState(false);
 
@@ -109,6 +109,16 @@ export function Success(): JSX.Element {
           >
             <ExternalLink size={15} />
             {t(language, "success.dashboard")}
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => goTo("control-center")}
+            className="no-drag w-full flex items-center justify-center gap-2 py-2.5 px-6 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium rounded-xl text-sm hover:bg-emerald-500/20 transition-colors"
+          >
+            <Gauge size={14} />
+            {language === "es" ? "Centro de Control" : "Control Center"}
           </motion.button>
 
           <button

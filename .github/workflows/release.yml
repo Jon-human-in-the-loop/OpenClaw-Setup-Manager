@@ -1,0 +1,50 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Activa el workflow cuando se sube un tag de versión (ej: v1.0.0)
+  workflow_dispatch: # Permite ejecutar el build manualmente desde la pestaña Actions
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+          
+      - name: Install Dependencies
+        run: pnpm install
+        
+      - name: Build and Release Electron App
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          # Token para subir los ejecutables a los Releases de GitHub
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pnpm_install: true
+          # Ejecutar pnpm build antes de empaquetar
+          build_script_name: build
+          
+          # Argumentos condicionales separados por OS
+          mac_certs: ${{ secrets.MAC_CERTS }}
+          mac_certs_password: ${{ secrets.MAC_CERTS_PASSWORD }}
+          
+        env:
+          # Para evitar que el build de Mac/Windows falle si no hay certificados de firmado configurados.
+          # electron-builder by default needs identity. We bypass it for open source builds if needed.
+          CSC_IDENTITY_AUTO_DISCOVERY: false

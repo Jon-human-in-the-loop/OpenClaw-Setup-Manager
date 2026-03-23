@@ -7,6 +7,20 @@ import { registerConfigHandlers } from "./handlers/config.handler";
 import { registerUpdateHandlers, configureAutoUpdater } from "./handlers/update.handler";
 import { registerSessionHandlers, cleanupOldSessions } from "./handlers/session.handler";
 import { registerNetworkHandlers, startNetworkMonitoring } from "./handlers/network.handler";
+import { registerControlHandlers, startControlMonitoring } from "./handlers/control.handler";
+import { registerRepairHandlers } from "./handlers/repair.handler";
+import { registerExportHandlers } from "./handlers/export.handler";
+import { registerStateHandlers } from "./handlers/state.handler";
+import { registerDiagnosticHandlers } from "./handlers/diagnostic.handler";
+import { registerAutostartHandlers } from "./handlers/autostart.handler";
+import { registerWslHandlers } from "./handlers/wsl.handler";
+import { registerDepsHandlers } from "./handlers/deps.handler";
+import { registerKeychainHandlers } from "./handlers/keychain.handler";
+import { registerBackupHandlers } from "./handlers/backup.handler";
+import { registerProfileHandlers } from "./handlers/profile.handler";
+import { startHealthcheckLoop, stopHealthcheckLoop } from "./healthcheck";
+import { startDockerLogStream, stopDockerLogStream } from "./docker-logs";
+import { closeDb } from "./db";
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -65,14 +79,34 @@ app.whenReady().then(() => {
   registerUpdateHandlers();
   registerSessionHandlers();
   registerNetworkHandlers();
+  registerControlHandlers();
+  registerRepairHandlers();
+  registerExportHandlers();
+  registerStateHandlers();
+  registerDiagnosticHandlers();
+  registerAutostartHandlers();
+  registerWslHandlers();
+  registerDepsHandlers();
+  registerKeychainHandlers();
+  registerBackupHandlers();
+  registerProfileHandlers();
 
   createWindow();
+
+  // Start healthcheck loop after window is created
+  startHealthcheckLoop(mainWindow);
+
+  // Start background dual-layer logging for Docker errors
+  startDockerLogStream("openclaw-agent", mainWindow);
 
   // Configure auto-updater after window is ready
   configureAutoUpdater();
 
   // Start network monitoring
   startNetworkMonitoring(mainWindow);
+  
+  // Start control monitoring
+  startControlMonitoring(mainWindow);
 
   // Cleanup old sessions (30+ days)
   cleanupOldSessions();
@@ -86,6 +120,12 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+app.on("will-quit", () => {
+  stopDockerLogStream();
+  stopHealthcheckLoop();
+  closeDb();
 });
 
 // Handle window controls via IPC

@@ -26,6 +26,7 @@ const STEP_NUMBERS: Record<WizardStep, number> = {
   "credentials": 6,
   "installing": 7,
   "success": 8,
+  "control-center": 9,
 };
 
 export function StepIndicator(): JSX.Element {

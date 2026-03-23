@@ -7,6 +7,9 @@
     "paths": {
       "@renderer/*": ["src/renderer/*"],
       "@/*": ["src/renderer/*"]
-    }
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"]
   }
 }
