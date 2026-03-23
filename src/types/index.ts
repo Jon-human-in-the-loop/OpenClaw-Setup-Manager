@@ -173,6 +173,10 @@ export interface InstallCompleteEvent {
   success: boolean;
   dashboardUrl?: string;
   message: string;
+  healthcheck?: {
+    dashboard: HealthcheckResult;
+    gateway: HealthcheckResult;
+  };
 }
 
 // ─── Auto-Update ────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import {
   isWindows,
   getOpenClawDir,
   getOpenClawLinuxDir,
+  spawnDockerArgs,
   spawnDockerComposeArgs,
   wslForwardEnv,
 } from "../wsl-utils";

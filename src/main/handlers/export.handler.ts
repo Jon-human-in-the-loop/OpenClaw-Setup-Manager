@@ -1,13 +1,12 @@
-import { ipcMain, dialog, app } from "electron";
-import { join, dirname } from "node:path";
+import { ipcMain, dialog } from "electron";
+import { join } from "node:path";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { homedir, platform, arch, release } from "node:os";
-import { getAuditLog } from "../db";
+import { getOpenClawDir } from "../wsl-utils";
 
 export function registerExportHandlers(): void {
   ipcMain.handle("export:script", async () => {
     try {
-      const openclawDir = join(homedir(), ".openclaw");
+      const openclawDir = getOpenClawDir();
       const composePath = join(openclawDir, "docker-compose.yml");
       const envPath = join(openclawDir, ".env");
       
@@ -20,17 +19,16 @@ export function registerExportHandlers(): void {
       
       // Mask secrets in .env
       const envContent = rawEnvContent
-        .split("\\n")
+        .split("\n")
         .map(line => {
           if (line.trim().startsWith("#") || !line.includes("=")) return line;
-          const [key, ...rest] = line.split("=");
-          const val = rest.join("=");
+          const [key] = line.split("=");
           if (key.includes("KEY") || key.includes("TOKEN") || key.includes("SECRET") || key.includes("PASSWORD")) {
             return `${key}=******** (Hidden for security) ********`;
           }
           return line;
         })
-        .join("\\n");
+        .join("\n");
         
       const composeContent = readFileSync(composePath, "utf-8");
       
@@ -164,14 +162,4 @@ echo -e "Use '\${COMPOSE_CMD} logs -f' in \${INSTALL_DIR} to view logs."
   });
 }
 
-/**
- * Internal helper to log actions (proxied from db to avoid circular deps if any, 
- * although db doesn't import export.handler)
- */
-function logAction(action: string, detail: string, result: string) {
-  try {
-    const { logAction: dbLog } = require("../db");
-    dbLog(action, detail, result);
-  } catch {}
-}
 

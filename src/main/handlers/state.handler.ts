@@ -67,8 +67,9 @@ export function registerStateHandlers(): void {
     return await readState();
   });
 
-  ipcMain.handle("state:write", async (_, partialState: Partial<OpenClawState>) => {
-    return await updateState(partialState);
+  ipcMain.handle("state:write", async (_, partialState: Partial<OpenClawState>): Promise<{ success: boolean }> => {
+    await updateState(partialState);
+    return { success: true };
   });
 
   // Expose audit log to the renderer (for diagnostic export)
