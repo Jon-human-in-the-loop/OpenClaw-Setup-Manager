@@ -1,12 +1,12 @@
 import { ipcMain, shell } from "electron";
 import { execSync } from "node:child_process";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import http from "node:http";
 import type { ContainerStatus, ContainerState, ControlActionResult } from "../../types";
 import { getSecret } from "../keychain";
 import { getContainerLogs, ContainerLogEntry, getState } from "../db";
+import { wrapDockerCmd, getOpenClawDir, getOpenClawLinuxDir, wslForwardEnv } from "../wsl-utils";
 
 /** Returns the stored UI language preference ("es" or "en"), defaults to "es". */
 function getStoredLanguage(): "es" | "en" {
@@ -92,7 +92,9 @@ export function stopControlMonitoring() {
 const CONTAINER_NAME = "openclaw-agent";
 
 function getComposePath(): string {
-  return join(homedir(), ".openclaw", "docker-compose.yml");
+  // Returns the Linux-style path used in docker compose commands.
+  // On Windows this is the WSL path; on macOS/Linux it's the regular home path.
+  return join(getOpenClawLinuxDir(), "docker-compose.yml").replace(/\\/g, "/");
 }
 
 /**
@@ -119,7 +121,7 @@ function quickHttpCheck(url: string, timeoutMs = 3000): Promise<boolean> {
 function inspectContainer(): { state: ContainerState; uptime?: string; containerId?: string; health?: string } {
   try {
     const raw = execSync(
-      `docker inspect --format='{{.State.Status}}|{{.State.Health.Status}}|{{.State.StartedAt}}|{{.Id}}' ${CONTAINER_NAME}`,
+      wrapDockerCmd(`inspect --format='{{.State.Status}}|{{.State.Health.Status}}|{{.State.StartedAt}}|{{.Id}}' ${CONTAINER_NAME}`),
       { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"], timeout: 5000 }
     ).trim();
 
@@ -214,8 +216,12 @@ export function registerControlHandlers(): void {
     }
 
     try {
-      const envVars = { ...process.env, LLM_API_KEY: getSecret("LLM_API_KEY") || "" };
-      execSync(`docker compose -f "${composePath}" up -d`, {
+      const envVars = {
+        ...process.env,
+        LLM_API_KEY: getSecret("LLM_API_KEY") || "",
+        ...wslForwardEnv(["LLM_API_KEY"]),
+      };
+      execSync(wrapDockerCmd(`compose -f "${composePath}" up -d`), {
         encoding: "utf8",
         timeout: 30000,
         env: envVars,
@@ -239,7 +245,7 @@ export function registerControlHandlers(): void {
    */
   ipcMain.handle("control:stop", async (): Promise<ControlActionResult> => {
     try {
-      execSync(`docker stop ${CONTAINER_NAME}`, {
+      execSync(wrapDockerCmd(`stop ${CONTAINER_NAME}`), {
         encoding: "utf8",
         timeout: 15000,
       });
@@ -263,8 +269,12 @@ export function registerControlHandlers(): void {
   ipcMain.handle("control:restart", async (): Promise<ControlActionResult> => {
     const composePath = getComposePath();
     try {
-      const envVars = { ...process.env, LLM_API_KEY: getSecret("LLM_API_KEY") || "" };
-      execSync(`docker compose -f "${composePath}" restart`, {
+      const envVars = {
+        ...process.env,
+        LLM_API_KEY: getSecret("LLM_API_KEY") || "",
+        ...wslForwardEnv(["LLM_API_KEY"]),
+      };
+      execSync(wrapDockerCmd(`compose -f "${composePath}" restart`), {
         encoding: "utf8",
         timeout: 30000,
         env: envVars,
@@ -295,7 +305,7 @@ export function registerControlHandlers(): void {
    */
   ipcMain.handle("control:logs", async (_, lines = 100): Promise<ControlActionResult> => {
     try {
-      const logsRaw = execSync(`docker logs --tail ${lines} ${CONTAINER_NAME}`, {
+      const logsRaw = execSync(wrapDockerCmd(`logs --tail ${lines} ${CONTAINER_NAME}`), {
         encoding: "utf8",
         timeout: 10000,
       });
@@ -347,7 +357,9 @@ export function registerControlHandlers(): void {
    * control:open-config — Abre la carpeta de configuración en el explorador de archivos.
    */
   ipcMain.handle("control:open-config", async (): Promise<ControlActionResult> => {
-    const configDir = join(homedir(), ".openclaw");
+    // On Windows the config lives in the WSL filesystem; use the UNC path so
+    // Windows Explorer can open it.  On macOS/Linux use the regular home path.
+    const configDir = getOpenClawDir();
     try {
       await shell.openPath(configDir);
       return {

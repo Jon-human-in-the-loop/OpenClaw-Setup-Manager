@@ -42,39 +42,23 @@ export function Deployment(): JSX.Element {
   }, [platformCapabilities, setPlatformCapabilities, setDeploymentType]);
 
   const caps: PlatformCapabilities | null = platformCapabilities;
-  const isWindows = caps?.os === "win32";
+  const isWindowsOSOS = caps?.os === "win32";
   const isMacOrLinux = caps?.os === "darwin" || caps?.os === "linux";
   const dockerInstalled = caps?.docker.installed ?? false;
   const dockerRunning = caps?.docker.running ?? false;
 
+  // On Windows, the only supported deployment is WSL2+Docker (enforced by design).
+  // Auto-select it so the user just sees a confirmation.
+  useEffect(() => {
+    if (isWindowsOSOS) {
+      setDeploymentType("wsl2-docker");
+    }
+  }, [isWindowsOSOS, setDeploymentType]);
+
   const options: DeploymentOption[] = [];
 
-  // Opción local (siempre disponible)
-  options.push({
-    id: "local",
-    titleKey: "deployment.local.title",
-    descKey: isWindows ? "deployment.local.desc.windows" : "deployment.local.desc",
-    icon: <Terminal className="w-6 h-6" />,
-    badgeKey: isWindows ? "deployment.local.badge.windows" : undefined,
-    badgeColor: isWindows ? "text-emerald-400" : undefined,
-    warningKey: isWindows ? "deployment.local.warning.windows" : "deployment.local.warning",
-  });
-
-  // Opción Docker (solo macOS/Linux)
-  if (isMacOrLinux) {
-    options.push({
-      id: "docker",
-      titleKey: "deployment.docker.title",
-      descKey: "deployment.docker.desc",
-      icon: <Container className="w-6 h-6" />,
-      badgeKey: "deployment.docker.badge",
-      badgeColor: "text-emerald-400",
-      requiresDocker: true,
-    });
-  }
-
-  // Opción WSL2 (solo Windows con WSL2 disponible)
-  if (isWindows && caps?.wsl2Available) {
+  if (isWindowsOSOS) {
+    // Windows: only WSL2-Docker is supported
     options.push({
       id: "wsl2-docker",
       titleKey: "deployment.wsl2.title",
@@ -82,21 +66,40 @@ export function Deployment(): JSX.Element {
       icon: <Server className="w-6 h-6" />,
       badgeKey: "deployment.wsl2.badge",
       badgeColor: "text-yellow-400",
-      warningKey: "deployment.wsl2.warning",
-      requiresDocker: true,
     });
+  } else {
+    // Opción local (macOS/Linux)
+    options.push({
+      id: "local",
+      titleKey: "deployment.local.title",
+      descKey: "deployment.local.desc",
+      icon: <Terminal className="w-6 h-6" />,
+      warningKey: "deployment.local.warning",
+    });
+
+    // Opción Docker (solo macOS/Linux)
+    if (isMacOrLinux) {
+      options.push({
+        id: "docker",
+        titleKey: "deployment.docker.title",
+        descKey: "deployment.docker.desc",
+        icon: <Container className="w-6 h-6" />,
+        badgeKey: "deployment.docker.badge",
+        badgeColor: "text-emerald-400",
+        requiresDocker: true,
+      });
+    }
   }
 
   const canContinue = !!deploymentType;
 
-  // Si seleccionó Docker pero no está activo, mostrar aviso
+  // Only show Docker status warnings for non-Windows Docker deployments.
+  // On Windows, Docker runs inside WSL and its status is managed by WslSetup.
   const dockerWarning =
-    (deploymentType === "docker" || deploymentType === "wsl2-docker") &&
-    dockerInstalled && !dockerRunning;
+    deploymentType === "docker" && !isWindowsOS && dockerInstalled && !dockerRunning;
 
   const dockerMissing =
-    (deploymentType === "docker" || deploymentType === "wsl2-docker") &&
-    !dockerInstalled;
+    deploymentType === "docker" && !isWindowsOS && !dockerInstalled;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">

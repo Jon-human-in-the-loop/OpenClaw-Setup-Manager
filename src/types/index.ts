@@ -3,6 +3,7 @@ export type Language = "es" | "en";
 export type WizardStep =
   | "welcome"
   | "system-check"
+  | "wsl-setup"
   | "deployment"
   | "security"
   | "setup-type"
@@ -13,6 +14,18 @@ export type WizardStep =
   | "credentials"
   | "installing"
   | "success";
+
+// ─── WSL ─────────────────────────────────────────────────────────────────────
+
+export type WslStatus = "not-installed" | "no-distro" | "ready";
+
+export interface WslDetailedStatus {
+  status: WslStatus;
+  /** Name of the default WSL distribution (e.g. "Ubuntu") */
+  defaultDistro?: string;
+  /** Linux home path inside WSL (e.g. "/home/ubuntu") */
+  linuxHome?: string;
+}
 
 // ─── Deployment types ────────────────────────────────────────────────────────
 

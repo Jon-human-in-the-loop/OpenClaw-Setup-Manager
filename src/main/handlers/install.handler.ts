@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from "electron";
 import { spawn } from "node:child_process";
-import { homedir, platform } from "node:os";
+import { homedir } from "node:os";
 import { writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import http from "node:http";
@@ -8,6 +8,13 @@ import type { InstallConfig, HealthcheckResult } from "../../types";
 import { getMainWindow } from "../index";
 import { updateState } from "./state.handler";
 import { saveSecret, getSecret } from "../keychain";
+import {
+  isWindows,
+  getOpenClawDir,
+  getOpenClawLinuxDir,
+  spawnDockerComposeArgs,
+  wslForwardEnv,
+} from "../wsl-utils";
 
 type InstallProgressEvent = {
   percent: number;
@@ -349,7 +356,12 @@ export function registerInstallHandlers(): void {
   ipcMain.handle("install:start", async (_, config: InstallConfig) => {
     const win = getMainWindow();
     const homeDir = homedir();
-    const openClawDir = join(homeDir, ".openclaw");
+
+    // On Windows: use the WSL filesystem path for Node.js file I/O.
+    // On macOS/Linux: use ~/.openclaw directly.
+    const openClawDir = getOpenClawDir();
+    // Linux-style path used when passing paths to docker/wsl commands.
+    const openClawLinuxDir = getOpenClawLinuxDir();
 
     try {
       // PASO 1: Verificar/Instalar Docker
@@ -439,19 +451,17 @@ export function registerInstallHandlers(): void {
       const configJson = generateOpenClawConfig(config, gatewayToken);
       const configPath = join(openClawDir, "openclaw.json");
       writeFileSync(configPath, configJson, "utf-8");
-      chmodSync(configPath, 0o600);
+      // Unix permissions are not meaningful on Windows UNC paths; skip on Windows.
+      if (!isWindows()) chmodSync(configPath, 0o600);
 
       const tokenPath = join(openClawDir, ".gateway-token");
       writeFileSync(tokenPath, gatewayToken, "utf-8");
-      chmodSync(tokenPath, 0o600);
+      if (!isWindows()) chmodSync(tokenPath, 0o600);
 
       // PASO 5: Guardar API keys en el Keychain del Sistema
       if (config.apiKey) {
         saveSecret("LLM_API_KEY", config.apiKey);
         // La apiKey ya no se escribe en texto plano (.env). Se inyecta en runtime.
-      } else {
-        // Asegurar que si hacemos reinstall no le pasamos una key antigua si el usuario la borró
-        // (Aunque esto depende de la info del frontend)
       }
 
       // PASO 6: Escribir docker-compose.yml
@@ -466,7 +476,7 @@ export function registerInstallHandlers(): void {
       const dockerCompose = generateDockerCompose();
       const composePath = join(openClawDir, "docker-compose.yml");
       writeFileSync(composePath, dockerCompose, "utf-8");
-      chmodSync(composePath, 0o600);
+      if (!isWindows()) chmodSync(composePath, 0o600);
 
       // PASO 7: Levantar contenedor
       emit(win, "install:progress", {
@@ -477,15 +487,21 @@ export function registerInstallHandlers(): void {
             : "Starting container...",
       } satisfies InstallProgressEvent);
 
+      // On Windows, use the Linux-style path inside WSL for docker compose commands.
+      // LLM_API_KEY is forwarded to WSL via WSLENV.
+      const linuxComposePath = join(openClawLinuxDir, "docker-compose.yml").replace(/\\/g, "/");
       const envVars = {
+        ...process.env,
         HOME: homeDir,
         LLM_API_KEY: getSecret("LLM_API_KEY") || "",
+        ...wslForwardEnv(["LLM_API_KEY"]),
       };
 
+      const { command: pullCmd, args: pullArgs } = spawnDockerComposeArgs(linuxComposePath, ["pull"]);
       await runCommand(
         win,
-        "docker",
-        ["compose", "-f", composePath, "pull"],
+        pullCmd,
+        pullArgs,
         70,
         80,
         config.language === "es"
@@ -502,10 +518,11 @@ export function registerInstallHandlers(): void {
             : "Starting services...",
       } satisfies InstallProgressEvent);
 
+      const { command: upCmd, args: upArgs } = spawnDockerComposeArgs(linuxComposePath, ["up", "-d"]);
       await runCommand(
         win,
-        "docker",
-        ["compose", "-f", composePath, "up", "-d"],
+        upCmd,
+        upArgs,
         80,
         90,
         config.language === "es" ? "Levantando contenedor..." : "Starting container...",

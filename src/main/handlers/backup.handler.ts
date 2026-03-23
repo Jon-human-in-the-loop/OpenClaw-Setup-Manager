@@ -5,8 +5,9 @@ import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from 
 import { join } from "node:path";
 import { homedir } from "node:os";
 import JSZip from "jszip";
+import { wrapDockerCmd, getOpenClawDir } from "../wsl-utils";
 
-const OPENCLAW_DIR = join(homedir(), ".openclaw");
+const OPENCLAW_DIR = getOpenClawDir();
 const DB_PATH = join(OPENCLAW_DIR, "data.db");
 
 // ─── Crypto helpers ──────────────────────────────────────────
@@ -161,10 +162,10 @@ export function registerBackupHandlers(): void {
       // Stop any running containers before restoring
       try {
         // Best-effort: stop all openclaw containers
-        execSync(`docker ps -q --filter "name=openclaw"`, { encoding: "utf8" })
+        execSync(wrapDockerCmd(`ps -q --filter "name=openclaw"`), { encoding: "utf8" })
           .split("\n")
           .filter(Boolean)
-          .forEach((id) => execSync(`docker stop ${id.trim()}`, { timeout: 30_000 }));
+          .forEach((id) => execSync(wrapDockerCmd(`stop ${id.trim()}`), { timeout: 30_000 }));
       } catch {
         // Non-fatal: container might already be stopped
       }

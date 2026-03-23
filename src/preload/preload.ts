@@ -17,6 +17,7 @@ import type {
   RepairResult,
   OpenClawState,
   HealthStatus,
+  WslDetailedStatus,
 } from "../types";
 
 // Expose a safe, typed API to the renderer via window.api
@@ -36,7 +37,12 @@ const api = {
     },
   },
   wsl: {
-    install: (distro: string) => ipcRenderer.invoke("wsl:install", distro),
+    status: (forceRefresh?: boolean): Promise<WslDetailedStatus> =>
+      ipcRenderer.invoke("wsl:status", forceRefresh),
+    installWsl: (): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke("wsl:install-wsl"),
+    install: (distro: string): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke("wsl:install", distro),
   },
   deps: {
     install: (depId: string) => ipcRenderer.invoke("deps:install", depId),

@@ -95,6 +95,36 @@ const translations = {
   "systemcheck.continue": { es: "Continuar", en: "Continue" },
   "systemcheck.fixAndRetry": { es: "Corregir y volver a verificar", en: "Fix and re-check" },
 
+  // ── WSL Setup ─────────────────────────────────────────────────────────────
+  "wslsetup.title": { es: "Configurando Windows Subsystem for Linux", en: "Setting Up Windows Subsystem for Linux" },
+  "wslsetup.subtitle": {
+    es: "OpenClaw necesita WSL2 con Docker para funcionar en Windows. Esto es un proceso de una sola vez.",
+    en: "OpenClaw needs WSL2 with Docker to run on Windows. This is a one-time setup.",
+  },
+  "wslsetup.checking": { es: "Verificando WSL...", en: "Checking WSL..." },
+  "wslsetup.notinstalled.title": { es: "WSL no está instalado", en: "WSL is not installed" },
+  "wslsetup.notinstalled.desc": {
+    es: "Windows Subsystem for Linux (WSL2) es necesario para ejecutar Docker y OpenClaw en Windows. Haz clic en el botón para instalarlo. Se pedirán permisos de administrador y el sistema se reiniciará.",
+    en: "Windows Subsystem for Linux (WSL2) is required to run Docker and OpenClaw on Windows. Click the button to install it. Administrator permission will be requested and the system will reboot.",
+  },
+  "wslsetup.install.button": { es: "Instalar WSL2", en: "Install WSL2" },
+  "wslsetup.installing": { es: "Instalando WSL2... (esto puede tardar varios minutos)", en: "Installing WSL2... (this may take several minutes)" },
+  "wslsetup.reboot.title": { es: "Reinicio necesario", en: "Reboot required" },
+  "wslsetup.reboot.desc": {
+    es: "WSL2 se instaló correctamente. Para completar la instalación, el sistema necesita reiniciarse. OpenClaw continuará automáticamente después del reinicio.",
+    en: "WSL2 was installed successfully. To complete the setup, the system needs to reboot. OpenClaw will continue automatically after the reboot.",
+  },
+  "wslsetup.reboot.button": { es: "Reiniciar ahora", en: "Reboot now" },
+  "wslsetup.nodistro.title": { es: "Instalando Ubuntu en WSL...", en: "Installing Ubuntu in WSL..." },
+  "wslsetup.nodistro.desc": {
+    es: "WSL está disponible pero no tiene ninguna distribución Linux. Instalando Ubuntu automáticamente...",
+    en: "WSL is available but has no Linux distribution. Installing Ubuntu automatically...",
+  },
+  "wslsetup.ready.title": { es: "WSL listo", en: "WSL ready" },
+  "wslsetup.ready.desc": { es: "WSL2 con Ubuntu está disponible. Puedes continuar con la instalación.", en: "WSL2 with Ubuntu is available. You can proceed with the installation." },
+  "wslsetup.error": { es: "Error al configurar WSL", en: "Error setting up WSL" },
+  "wslsetup.retry": { es: "Reintentar", en: "Retry" },
+
   // ── Setup Type ────────────────────────────────────────────────────────────
   "setuptype.title": { es: "¿Cómo quieres instalar OpenClaw?", en: "How do you want to install OpenClaw?" },
   "setuptype.subtitle": { es: "Elige según tus necesidades. Puedes cambiar todo después.", en: "Choose based on your needs. You can change everything later." },

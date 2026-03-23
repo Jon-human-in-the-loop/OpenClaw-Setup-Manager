@@ -1,24 +1,27 @@
 import { ipcMain } from "electron";
 import { execSync } from "node:child_process";
-import { homedir, platform } from "node:os";
+import { platform } from "node:os";
 import { join } from "node:path";
 import { existsSync, writeFileSync, chmodSync } from "node:fs";
 import net from "node:net";
 import type { RepairIssue, RepairResult } from "../../types";
 import { updateState } from "./state.handler";
 import { getSecret } from "../keychain";
+import {
+  wrapDockerCmd,
+  getOpenClawDir,
+  getOpenClawLinuxDir,
+  wslForwardEnv,
+  isWindows,
+} from "../wsl-utils";
 
 // ─── HELPERS ─────────────────────────────────────────────────
 
 const CONTAINER_NAME = "openclaw-agent";
 
-function getOpenClawDir(): string {
-  return join(homedir(), ".openclaw");
-}
-
 function isDockerDaemonRunning(): boolean {
   try {
-    execSync("docker info", { stdio: "ignore", timeout: 5000 });
+    execSync(wrapDockerCmd("info"), { stdio: "ignore", timeout: 5000 });
     return true;
   } catch {
     return false;
@@ -28,7 +31,7 @@ function isDockerDaemonRunning(): boolean {
 function isContainerRunning(): boolean {
   try {
     const out = execSync(
-      `docker inspect --format='{{.State.Running}}' ${CONTAINER_NAME}`,
+      wrapDockerCmd(`inspect --format='{{.State.Running}}' ${CONTAINER_NAME}`),
       { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"], timeout: 5000 }
     ).trim().replace(/'/g, "");
     return out === "true";
@@ -39,7 +42,7 @@ function isContainerRunning(): boolean {
 
 function containerExists(): boolean {
   try {
-    execSync(`docker inspect ${CONTAINER_NAME}`, {
+    execSync(wrapDockerCmd(`inspect ${CONTAINER_NAME}`), {
       stdio: "ignore",
       timeout: 5000,
     });
@@ -73,7 +76,7 @@ async function runDiagnosis(): Promise<RepairIssue[]> {
       severity: "critical",
       title: "Docker no está ejecutándose",
       description: "El demonio de Docker no responde. Sin Docker, OpenClaw no puede funcionar.",
-      autoFixable: platform() === "linux",
+      autoFixable: platform() === "linux" || platform() === "darwin",
     });
   }
 
@@ -183,11 +186,20 @@ function fixDockerDaemon(): RepairResult {
         message: "Docker Desktop abierto. Puede tardar unos segundos en iniciar.",
         technicalDetail: "open -a Docker",
       };
+    } else if (os === "win32") {
+      // Start dockerd inside WSL
+      execSync("wsl -e sh -c 'sudo service docker start'", { timeout: 20000 });
+      return {
+        issue: "docker-not-running",
+        success: true,
+        message: "Docker daemon iniciado en WSL.",
+        technicalDetail: "wsl -e sh -c 'sudo service docker start'",
+      };
     } else {
       return {
         issue: "docker-not-running",
         success: false,
-        message: "En Windows, abre Docker Desktop manualmente desde el menú Inicio.",
+        message: "No se puede iniciar Docker automáticamente en este sistema.",
       };
     }
   } catch (err) {
@@ -201,7 +213,7 @@ function fixDockerDaemon(): RepairResult {
 
 function fixContainerStopped(): RepairResult {
   try {
-    execSync(`docker start ${CONTAINER_NAME}`, { timeout: 15000 });
+    execSync(wrapDockerCmd(`start ${CONTAINER_NAME}`), { timeout: 15000 });
     return {
       issue: "container-stopped",
       success: true,
@@ -218,7 +230,8 @@ function fixContainerStopped(): RepairResult {
 }
 
 function fixContainerMissing(): RepairResult {
-  const composePath = join(getOpenClawDir(), "docker-compose.yml");
+  const openClawDir = getOpenClawDir();
+  const composePath = join(openClawDir, "docker-compose.yml");
   if (!existsSync(composePath)) {
     return {
       issue: "container-missing",
@@ -228,8 +241,14 @@ function fixContainerMissing(): RepairResult {
   }
 
   try {
-    const envVars = { ...process.env, LLM_API_KEY: getSecret("LLM_API_KEY") || "" };
-    execSync(`docker compose -f "${composePath}" up -d`, {
+    // Use the Linux path for docker compose on all platforms.
+    const linuxComposePath = join(getOpenClawLinuxDir(), "docker-compose.yml").replace(/\\/g, "/");
+    const envVars = {
+      ...process.env,
+      LLM_API_KEY: getSecret("LLM_API_KEY") || "",
+      ...wslForwardEnv(["LLM_API_KEY"]),
+    };
+    execSync(wrapDockerCmd(`compose -f "${linuxComposePath}" up -d`), {
       encoding: "utf8",
       timeout: 60000,
       env: envVars,
@@ -257,7 +276,7 @@ function fixEnvMissing(): RepairResult {
   const envPath = join(getOpenClawDir(), ".env");
   try {
     writeFileSync(envPath, "# OpenClaw Environment\n# LLM_API_KEY=your_key_here\n", "utf-8");
-    chmodSync(envPath, 0o600);
+    if (!isWindows()) chmodSync(envPath, 0o600);
     return {
       issue: "env-missing",
       success: true,
