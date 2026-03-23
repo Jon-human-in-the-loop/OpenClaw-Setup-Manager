@@ -42,7 +42,7 @@ export function Deployment(): JSX.Element {
   }, [platformCapabilities, setPlatformCapabilities, setDeploymentType]);
 
   const caps: PlatformCapabilities | null = platformCapabilities;
-  const isWindowsOSOS = caps?.os === "win32";
+  const isWindowsOS = caps?.os === "win32";
   const isMacOrLinux = caps?.os === "darwin" || caps?.os === "linux";
   const dockerInstalled = caps?.docker.installed ?? false;
   const dockerRunning = caps?.docker.running ?? false;
@@ -50,14 +50,14 @@ export function Deployment(): JSX.Element {
   // On Windows, the only supported deployment is WSL2+Docker (enforced by design).
   // Auto-select it so the user just sees a confirmation.
   useEffect(() => {
-    if (isWindowsOSOS) {
+    if (isWindowsOS) {
       setDeploymentType("wsl2-docker");
     }
-  }, [isWindowsOSOS, setDeploymentType]);
+  }, [isWindowsOS, setDeploymentType]);
 
   const options: DeploymentOption[] = [];
 
-  if (isWindowsOSOS) {
+  if (isWindowsOS) {
     // Windows: only WSL2-Docker is supported
     options.push({
       id: "wsl2-docker",

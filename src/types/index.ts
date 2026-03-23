@@ -13,7 +13,8 @@ export type WizardStep =
   | "channels"
   | "credentials"
   | "installing"
-  | "success";
+  | "success"
+  | "control-center";
 
 // ─── WSL ─────────────────────────────────────────────────────────────────────
 

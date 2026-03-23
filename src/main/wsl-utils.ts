@@ -51,10 +51,14 @@ export function getWslDetailedStatus(useCache = true): WslDetailedStatus {
     });
     wslAvailable = true;
     const decoded = raw.toString("utf16le");
+    // Filter out Docker Desktop utility distros (docker-desktop, docker-desktop-data)
+    // which are WSL entries but not general-purpose Linux environments.
+    const INTERNAL_DISTROS = new Set(["docker-desktop", "docker-desktop-data"]);
     distros = decoded
       .split(/\r?\n/)
       .map((l) => l.replace(/\0/g, "").trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((name) => !INTERNAL_DISTROS.has(name.toLowerCase()));
   } catch {
     // `wsl --list` failed; try a cheaper probe
     try {

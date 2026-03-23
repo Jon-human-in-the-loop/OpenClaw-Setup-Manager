@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from "electron";
 import { spawn } from "node:child_process";
-import { homedir } from "node:os";
+import { homedir, platform } from "node:os";
 import { writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import http from "node:http";
@@ -83,7 +83,8 @@ function runCommand(
 
 async function isDockerInstalled(): Promise<boolean> {
   return new Promise((resolve) => {
-    const child = spawn("docker", ["--version"], { shell: true });
+    const { command, args } = spawnDockerArgs(["--version"]);
+    const child = spawn(command, args, { shell: false });
     child.on("close", (code) => resolve(code === 0));
     child.on("error", () => resolve(false));
   });

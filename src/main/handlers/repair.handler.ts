@@ -76,7 +76,7 @@ async function runDiagnosis(): Promise<RepairIssue[]> {
       severity: "critical",
       title: "Docker no está ejecutándose",
       description: "El demonio de Docker no responde. Sin Docker, OpenClaw no puede funcionar.",
-      autoFixable: platform() === "linux" || platform() === "darwin",
+      autoFixable: ["linux", "darwin", "win32"].includes(platform()),
     });
   }
 
