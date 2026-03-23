@@ -34,7 +34,9 @@ export function ChannelCredentials(): JSX.Element {
     channels,
     phoneNumber, setPhoneNumber,
     telegramToken, setTelegramToken,
+    telegramUserId, setTelegramUserId,
     discordToken, setDiscordToken,
+    discordUserId, setDiscordUserId,
     slackToken, setSlackToken,
     goNext, goPrev,
   } = useInstallation();
@@ -43,6 +45,11 @@ export function ChannelCredentials(): JSX.Element {
   const [openGuide, setOpenGuide] = useState<string | null>(null);
 
   const toggle = (id: string) => setShowFields((p) => ({ ...p, [id]: !p[id] }));
+
+  const validateUserId = (v: string) =>
+    /^\d+$/.test(v.trim()) && v.trim().length >= 5
+      ? { valid: true }
+      : { valid: false, error: "Debe ser un número de al menos 5 dígitos.", errorEn: "Must be a number with at least 5 digits." };
 
   const fields: CredentialField[] = [
     channels.has("whatsapp") && {
@@ -63,6 +70,15 @@ export function ChannelCredentials(): JSX.Element {
       onChange: setTelegramToken,
       validate: validateTelegramToken,
     },
+    channels.has("telegram") && {
+      channelId: "telegram-userid",
+      labelKey: "credentials.telegram.userid.label",
+      placeholderKey: "credentials.telegram.userid.placeholder",
+      hintKey: "credentials.telegram.userid.hint",
+      value: telegramUserId,
+      onChange: setTelegramUserId,
+      validate: validateUserId,
+    },
     channels.has("discord") && {
       channelId: "discord",
       labelKey: "credentials.discord.label",
@@ -71,6 +87,15 @@ export function ChannelCredentials(): JSX.Element {
       value: discordToken,
       onChange: setDiscordToken,
       validate: validateDiscordToken,
+    },
+    channels.has("discord") && {
+      channelId: "discord-userid",
+      labelKey: "credentials.discord.userid.label",
+      placeholderKey: "credentials.discord.userid.placeholder",
+      hintKey: "credentials.discord.userid.hint",
+      value: discordUserId,
+      onChange: setDiscordUserId,
+      validate: validateUserId,
     },
     channels.has("slack") && {
       channelId: "slack",

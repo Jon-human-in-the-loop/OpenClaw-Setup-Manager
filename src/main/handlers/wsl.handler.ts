@@ -7,6 +7,10 @@ const execAsync = promisify(exec);
 
 export function registerWslHandlers(): void {
   ipcMain.handle("wsl:install", async (_, distro: string) => {
+    if (!/^[a-zA-Z0-9\-]+$/.test(distro)) {
+      logAction("wsl:install", `distro=${distro}`, "rejected: invalid distro name");
+      return { success: false, error: "Invalid distribution name: only alphanumeric characters and hyphens are allowed." };
+    }
     logAction("wsl:install", `distro=${distro}`, "started");
     try {
       const cmd = `powershell -Command "Start-Process wsl -ArgumentList '--install --distribution ${distro}' -Verb RunAs -Wait"`;

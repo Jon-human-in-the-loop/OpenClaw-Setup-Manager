@@ -63,9 +63,19 @@ export function registerNetworkHandlers(): void {
   });
 }
 
+let networkMonitoringInterval: NodeJS.Timeout | null = null;
+
+export function stopNetworkMonitoring(): void {
+  if (networkMonitoringInterval) {
+    clearInterval(networkMonitoringInterval);
+    networkMonitoringInterval = null;
+  }
+}
+
 // Start periodic network checks (every 30 seconds)
 export function startNetworkMonitoring(mainWindow: Electron.BrowserWindow | null) {
-  setInterval(async () => {
+  if (networkMonitoringInterval) clearInterval(networkMonitoringInterval);
+  networkMonitoringInterval = setInterval(async () => {
     const wasOnline = networkStatus.isOnline;
     const isOnline = await checkConnectivity();
 

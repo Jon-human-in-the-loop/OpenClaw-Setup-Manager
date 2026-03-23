@@ -6,8 +6,8 @@ import { registerInstallHandlers } from "./handlers/install.handler";
 import { registerConfigHandlers } from "./handlers/config.handler";
 import { registerUpdateHandlers, configureAutoUpdater } from "./handlers/update.handler";
 import { registerSessionHandlers, cleanupOldSessions } from "./handlers/session.handler";
-import { registerNetworkHandlers, startNetworkMonitoring } from "./handlers/network.handler";
-import { registerControlHandlers, startControlMonitoring } from "./handlers/control.handler";
+import { registerNetworkHandlers, startNetworkMonitoring, stopNetworkMonitoring } from "./handlers/network.handler";
+import { registerControlHandlers, startControlMonitoring, stopControlMonitoring } from "./handlers/control.handler";
 import { registerRepairHandlers } from "./handlers/repair.handler";
 import { registerExportHandlers } from "./handlers/export.handler";
 import { registerStateHandlers } from "./handlers/state.handler";
@@ -74,7 +74,7 @@ app.whenReady().then(() => {
 
   // Register all IPC handlers
   registerSystemHandlers();
-  registerInstallHandlers(mainWindow);
+  registerInstallHandlers();
   registerConfigHandlers();
   registerUpdateHandlers();
   registerSessionHandlers();
@@ -123,6 +123,8 @@ app.on("window-all-closed", () => {
 });
 
 app.on("will-quit", () => {
+  stopControlMonitoring();
+  stopNetworkMonitoring();
   stopDockerLogStream();
   stopHealthcheckLoop();
   closeDb();

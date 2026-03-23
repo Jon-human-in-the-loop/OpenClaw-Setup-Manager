@@ -6,6 +6,7 @@ import { existsSync, writeFileSync, chmodSync } from "node:fs";
 import net from "node:net";
 import type { RepairIssue, RepairResult } from "../../types";
 import { updateState } from "./state.handler";
+import { getSecret } from "../keychain";
 
 // ─── HELPERS ─────────────────────────────────────────────────
 
@@ -227,11 +228,13 @@ function fixContainerMissing(): RepairResult {
   }
 
   try {
+    const envVars = { ...process.env, LLM_API_KEY: getSecret("LLM_API_KEY") || "" };
     execSync(`docker compose -f "${composePath}" up -d`, {
       encoding: "utf8",
       timeout: 60000,
+      env: envVars,
     });
-    
+
     // Update state to reflect it's installed and working again
     updateState({ installed: true }).catch(() => {});
 

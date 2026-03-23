@@ -94,8 +94,8 @@ export function registerBackupHandlers(): void {
    * password-encrypted .occlaw file the user saves to disk.
    */
   ipcMain.handle("backup:export", async (_, password: string): Promise<BackupResult> => {
-    if (!password || password.trim().length < 4) {
-      return { success: false, message: "La contraseña debe tener al menos 4 caracteres." };
+    if (!password || password.trim().length < 12) {
+      return { success: false, message: "La contraseña debe tener al menos 12 caracteres. / Password must be at least 12 characters." };
     }
 
     try {
@@ -134,8 +134,8 @@ export function registerBackupHandlers(): void {
    * restores files, and restarts the stack.
    */
   ipcMain.handle("backup:import", async (_, password: string): Promise<BackupResult> => {
-    if (!password || password.trim().length < 4) {
-      return { success: false, message: "La contraseña debe tener al menos 4 caracteres." };
+    if (!password || password.trim().length < 12) {
+      return { success: false, message: "La contraseña debe tener al menos 12 caracteres. / Password must be at least 12 characters." };
     }
 
     try {

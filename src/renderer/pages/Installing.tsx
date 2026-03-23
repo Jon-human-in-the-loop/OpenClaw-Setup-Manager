@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Terminal, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, Terminal, AlertTriangle, RefreshCw, CheckCircle2 } from "lucide-react";
 import { useInstallation } from "@/context/InstallationContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { t } from "@/lib/i18n";
@@ -17,12 +17,16 @@ export function Installing(): JSX.Element {
     setInstallProgress,
     setInstallComplete,
     goTo,
+    goPrev,
     buildConfig,
   } = useInstallation();
   const { language } = useLanguage();
   const logRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [dashboardOk, setDashboardOk] = useState<boolean | null>(null);
+  const [gatewayOk, setGatewayOk] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (startedRef.current) return;
@@ -38,7 +42,30 @@ export function Installing(): JSX.Element {
       setInstallComplete(event.success, event.message, event.dashboardUrl);
       window.api.install.removeListeners();
       if (event.success) {
-        setTimeout(() => goTo("success"), 1000);
+        setIsVerifying(true);
+        // Verify dashboard and gateway respond before proceeding
+        const verify = async () => {
+          const maxAttempts = 12;
+          let dashboard = false;
+          let gateway = false;
+          for (let i = 0; i < maxAttempts; i++) {
+            try {
+              const status = await window.api.control.status();
+              dashboard = status.dashboardReachable;
+              gateway = status.gatewayReachable;
+              setDashboardOk(dashboard);
+              setGatewayOk(gateway);
+              if (dashboard && gateway) break;
+            } catch {
+              // ignore
+            }
+            if (i < maxAttempts - 1) {
+              await new Promise((r) => setTimeout(r, 5000));
+            }
+          }
+          setTimeout(() => goTo("success"), 800);
+        };
+        verify();
       }
     });
 
@@ -62,7 +89,7 @@ export function Installing(): JSX.Element {
 
   const handleRetry = () => {
     startedRef.current = false;
-    goTo("credentials");
+    goPrev();
   };
 
   return (
@@ -139,6 +166,39 @@ export function Installing(): JSX.Element {
                   : installMessage}
               </p>
             </div>
+
+            {/* Verification panel */}
+            {isVerifying && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-card border border-border rounded-xl space-y-3"
+              >
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {language === "es" ? "Verificando servicios..." : "Verifying services..."}
+                </p>
+                <div className="flex items-center gap-2">
+                  {dashboardOk === null
+                    ? <Loader2 size={14} className="text-primary animate-spin" />
+                    : dashboardOk
+                    ? <CheckCircle2 size={14} className="text-primary" />
+                    : <Loader2 size={14} className="text-primary animate-spin" />}
+                  <span className="text-sm text-foreground">
+                    Dashboard {dashboardOk === null ? (language === "es" ? "verificando..." : "checking...") : dashboardOk ? "✓ 127.0.0.1:3000" : (language === "es" ? "iniciando..." : "starting...")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {gatewayOk === null
+                    ? <Loader2 size={14} className="text-primary animate-spin" />
+                    : gatewayOk
+                    ? <CheckCircle2 size={14} className="text-primary" />
+                    : <Loader2 size={14} className="text-primary animate-spin" />}
+                  <span className="text-sm text-foreground">
+                    Gateway {gatewayOk === null ? (language === "es" ? "verificando..." : "checking...") : gatewayOk ? "✓ 127.0.0.1:18789" : (language === "es" ? "iniciando..." : "starting...")}
+                  </span>
+                </div>
+              </motion.div>
+            )}
 
             {/* Progress bar */}
             <div className="space-y-2">

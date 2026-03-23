@@ -11,9 +11,10 @@ const DASHBOARD_URL = "http://127.0.0.1:18789";
 const DOCS_URL = "https://github.com/openclaw/openclaw";
 
 export function Success(): JSX.Element {
-  const { agentName, primaryModel, channels, dashboardUrl, goTo } = useInstallation();
+  const { agentName, primaryModel, channels, dashboardUrl, gatewayToken, goTo } = useInstallation();
   const { language } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
 
   const url = dashboardUrl || DASHBOARD_URL;
   const model = getModel(primaryModel);
@@ -23,6 +24,12 @@ export function Success(): JSX.Element {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyToken = async () => {
+    await navigator.clipboard.writeText(gatewayToken);
+    setCopiedToken(true);
+    setTimeout(() => setCopiedToken(false), 2000);
   };
 
   return (
@@ -97,6 +104,28 @@ export function Success(): JSX.Element {
               </button>
             </div>
           </div>
+          {gatewayToken && (
+            <>
+              <div className="h-px bg-border" />
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {language === "es" ? "Token de Gateway" : "Gateway Token"}
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-mono text-muted-foreground truncate max-w-[120px]">
+                    {gatewayToken.substring(0, 8)}…
+                  </span>
+                  <button
+                    onClick={handleCopyToken}
+                    className="no-drag p-1 text-muted-foreground hover:text-foreground transition-colors"
+                    title={language === "es" ? "Copiar token completo" : "Copy full token"}
+                  >
+                    {copiedToken ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* CTA Buttons */}

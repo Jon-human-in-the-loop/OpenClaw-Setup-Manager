@@ -2,7 +2,7 @@ import { ipcMain } from "electron";
 import { getState, setState, getAuditLog } from "../db";
 import type { OpenClawState } from "../../types";
 
-const STATE_KEYS: (keyof OpenClawState)[] = ["installed", "lastHealthCheck", "version"];
+const STATE_KEYS: (keyof OpenClawState)[] = ["installed", "lastHealthCheck", "version", "language"];
 
 const DEFAULT_STATE: OpenClawState = {
   installed: false,

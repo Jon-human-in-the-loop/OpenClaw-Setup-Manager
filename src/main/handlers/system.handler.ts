@@ -6,14 +6,19 @@ import type { SystemCheckResult, DockerInfo, PlatformCapabilities, DeploymentTyp
 
 // ─── Node.js ────────────────────────────────────────────────────────────────
 
-function getNodeVersion(): { installed: boolean; version: string | null; meetsRequirement: boolean } {
+function getNodeVersion(): { installed: boolean; version: string | null; meetsRequirement: boolean; meetsRecommended: boolean } {
   try {
     const raw = execSync("node --version", { encoding: "utf8" }).trim();
     const match = raw.match(/^v?(\d+)\./);
     const major = match ? parseInt(match[1], 10) : 0;
-    return { installed: true, version: raw, meetsRequirement: major >= 22 };
+    return {
+      installed: true,
+      version: raw,
+      meetsRequirement: major >= 22,
+      meetsRecommended: major >= 24,
+    };
   } catch {
-    return { installed: false, version: null, meetsRequirement: false };
+    return { installed: false, version: null, meetsRequirement: false, meetsRecommended: false };
   }
 }
 
@@ -191,6 +196,7 @@ export function registerSystemHandlers(): void {
       nodeInstalled: node.installed,
       nodeVersion: node.version,
       nodeMeetsRequirement: node.meetsRequirement,
+      nodeMeetsRecommended: node.meetsRecommended,
       portAvailable,
       diskSpaceGB,
       diskSpaceMeetsRequirement: diskSpaceGB >= 5,
