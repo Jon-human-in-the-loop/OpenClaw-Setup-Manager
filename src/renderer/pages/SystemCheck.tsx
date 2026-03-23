@@ -51,7 +51,9 @@ export function SystemCheck(): JSX.Element {
       {
         id: "node",
         labelKey: "systemcheck.node",
-        status: res.nodeMeetsRequirement ? "ok" : res.nodeInstalled ? "error" : "error",
+        status: res.nodeMeetsRequirement
+          ? res.nodeMeetsRecommended ? "ok" : "warn"
+          : "error",
         detail: res.nodeInstalled
           ? res.nodeMeetsRequirement
             ? t(language, "systemcheck.node.ok", { version: res.nodeVersion ?? "" })
@@ -101,7 +103,7 @@ export function SystemCheck(): JSX.Element {
         labelKey: "systemcheck.docker",
         status: res.platformCapabilities.docker.installed
           ? res.platformCapabilities.docker.running ? "ok" : "error"
-          : "warn",
+          : "error",
         detail: res.platformCapabilities.docker.installed
           ? res.platformCapabilities.docker.running
             ? t(language, "systemcheck.docker.ok", { version: res.platformCapabilities.docker.version ?? "" })

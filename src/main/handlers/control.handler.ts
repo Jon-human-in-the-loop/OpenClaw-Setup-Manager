@@ -6,7 +6,26 @@ import { existsSync } from "node:fs";
 import http from "node:http";
 import type { ContainerStatus, ContainerState, ControlActionResult } from "../../types";
 import { getSecret } from "../keychain";
-import { getContainerLogs, ContainerLogEntry } from "../db";
+import { getContainerLogs, ContainerLogEntry, getState } from "../db";
+
+/** Returns the stored UI language preference ("es" or "en"), defaults to "es". */
+function getStoredLanguage(): "es" | "en" {
+  const raw = getState("language");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed === "en") return "en";
+    } catch {
+      if (raw === "en") return "en";
+    }
+  }
+  return "es";
+}
+
+/** Returns bilingual message: language-appropriate string. */
+function msg(es: string, en: string): string {
+  return getStoredLanguage() === "en" ? en : es;
+}
 
 // ─── BACKGROUND MONITORING ───────────────────────────────────
 
@@ -159,11 +178,16 @@ export function registerControlHandlers(): void {
   ipcMain.handle("control:status", async (): Promise<ContainerStatus> => {
     const container = inspectContainer();
 
-    // Verificar endpoints en paralelo
-    const [dashboardReachable, gatewayReachable] = await Promise.all([
-      quickHttpCheck("http://127.0.0.1:3000/healthz"),
-      quickHttpCheck("http://127.0.0.1:18789"),
-    ]);
+    // Only do HTTP checks if container is running to avoid unnecessary timeouts
+    let dashboardReachable = false;
+    let gatewayReachable = false;
+
+    if (container.state === "running") {
+      [dashboardReachable, gatewayReachable] = await Promise.all([
+        quickHttpCheck("http://127.0.0.1:3000/healthz"),
+        quickHttpCheck("http://127.0.0.1:18789"),
+      ]);
+    }
 
     return {
       state: container.state,
@@ -185,7 +209,7 @@ export function registerControlHandlers(): void {
       return {
         success: false,
         action: "start",
-        message: "No se encontró docker-compose.yml. ¿Se ha ejecutado el wizard?",
+        message: msg("No se encontró docker-compose.yml. ¿Se ha ejecutado el wizard?", "docker-compose.yml not found. Has the setup wizard been run?"),
       };
     }
 
@@ -199,7 +223,7 @@ export function registerControlHandlers(): void {
       return {
         success: true,
         action: "start",
-        message: "Contenedor iniciado correctamente.",
+        message: msg("Contenedor iniciado correctamente.", "Container started successfully."),
       };
     } catch (err) {
       return {
@@ -222,7 +246,7 @@ export function registerControlHandlers(): void {
       return {
         success: true,
         action: "stop",
-        message: "Contenedor detenido.",
+        message: msg("Contenedor detenido.", "Container stopped."),
       };
     } catch (err) {
       return {
@@ -248,7 +272,7 @@ export function registerControlHandlers(): void {
       return {
         success: true,
         action: "restart",
-        message: "Contenedor reiniciado.",
+        message: msg("Contenedor reiniciado.", "Container restarted."),
       };
     } catch (err) {
       return {
@@ -279,15 +303,15 @@ export function registerControlHandlers(): void {
       // Simple masking for common token formats (Bearer tokens, API keys)
       // This protects secrets from showing up directly in the UI if OpenClaw prints them
       const maskedLogs = logsRaw
-        .replace(/(Bearer\\s+)[a-zA-Z0-9\\-_\\.]+/g, "$1********")
-        .replace(/(token["']?\\s*:\\s*["'])[a-zA-Z0-9\\-_]+(["'])/g, "$1********$2")
-        .replace(/(api[_-]?key["']?\\s*:\\s*["'])[a-zA-Z0-9\\-_]+(["'])/gi, "$1********$2")
-        .replace(/(sk-[a-zA-Z0-9]{40,})/g, "sk-********");
+        .replace(/(Bearer\s+)[a-zA-Z0-9\-_.]+/g, "$1********")
+        .replace(/(token["']?\s*:\s*["'])[a-zA-Z0-9\-_]+(["'])/g, "$1********$2")
+        .replace(/(api[_-]?key["']?\s*:\s*["'])[a-zA-Z0-9\-_]+(["'])/gi, "$1********$2")
+        .replace(/(sk-(?:ant-)?[a-zA-Z0-9_\-]{20,})/g, "sk-********");
 
       return {
         success: true,
         action: "logs",
-        message: `Últimas ${lines} líneas de logs`,
+        message: msg(`Últimas ${lines} líneas de logs`, `Last ${lines} log lines`),
         data: maskedLogs,
       };
     } catch (err) {
@@ -308,7 +332,7 @@ export function registerControlHandlers(): void {
       return {
         success: true,
         action: "open-dashboard",
-        message: "Dashboard abierto en el navegador.",
+        message: msg("Dashboard abierto en el navegador.", "Dashboard opened in browser."),
       };
     } catch (err) {
       return {
@@ -329,7 +353,7 @@ export function registerControlHandlers(): void {
       return {
         success: true,
         action: "open-config",
-        message: "Carpeta de configuración abierta.",
+        message: msg("Carpeta de configuración abierta.", "Configuration folder opened."),
       };
     } catch (err) {
       return {

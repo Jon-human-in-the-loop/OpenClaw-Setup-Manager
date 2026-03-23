@@ -11,12 +11,7 @@ export interface PersistedInstallationState {
   agentEmoji: string;
   primaryModel: string;
   fallbackModel?: string;
-  apiKey: string;
   channels: string[];
-  phoneNumber: string;
-  telegramToken: string;
-  discordToken: string;
-  slackToken: string;
   gatewayToken: string;
   gatewayAuthEnabled: boolean;
 }

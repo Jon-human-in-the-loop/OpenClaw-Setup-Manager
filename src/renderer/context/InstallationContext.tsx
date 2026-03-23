@@ -39,6 +39,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   "credentials",
   "installing",
   "success",
+  "control-center",
 ];
 
 interface InstallationState {
@@ -67,7 +68,9 @@ interface InstallationState {
   channels: Set<string>;
   phoneNumber: string;
   telegramToken: string;
+  telegramUserId: string;
   discordToken: string;
+  discordUserId: string;
   slackToken: string;
 
   // Estado de instalación
@@ -108,7 +111,9 @@ interface InstallationContextValue extends InstallationState {
   toggleChannel: (channelId: string) => void;
   setPhoneNumber: (v: string) => void;
   setTelegramToken: (v: string) => void;
+  setTelegramUserId: (v: string) => void;
   setDiscordToken: (v: string) => void;
+  setDiscordUserId: (v: string) => void;
   setSlackToken: (v: string) => void;
 
   // Instalación
@@ -145,7 +150,9 @@ function getInitialState(): InstallationState {
     channels: new Set(["whatsapp"]),
     phoneNumber: "",
     telegramToken: "",
+    telegramUserId: "",
     discordToken: "",
+    discordUserId: "",
     slackToken: "",
 
     isInstalling: false,
@@ -170,12 +177,7 @@ function getInitialState(): InstallationState {
     agentEmoji: savedState.agentEmoji || "🦞",
     primaryModel: savedState.primaryModel || "anthropic/claude-sonnet-4-5",
     fallbackModel: savedState.fallbackModel,
-    apiKey: savedState.apiKey || "",
     channels: new Set(savedState.channels || ["whatsapp"]),
-    phoneNumber: savedState.phoneNumber || "",
-    telegramToken: savedState.telegramToken || "",
-    discordToken: savedState.discordToken || "",
-    slackToken: savedState.slackToken || "",
     gatewayToken: savedState.gatewayToken || generateGatewayToken(),
     gatewayAuthEnabled: savedState.gatewayAuthEnabled !== false,
   };
@@ -299,7 +301,9 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
 
   const setPhoneNumber = useCallback((v: string) => setState((p) => ({ ...p, phoneNumber: v })), []);
   const setTelegramToken = useCallback((v: string) => setState((p) => ({ ...p, telegramToken: v })), []);
+  const setTelegramUserId = useCallback((v: string) => setState((p) => ({ ...p, telegramUserId: v })), []);
   const setDiscordToken = useCallback((v: string) => setState((p) => ({ ...p, discordToken: v })), []);
+  const setDiscordUserId = useCallback((v: string) => setState((p) => ({ ...p, discordUserId: v })), []);
   const setSlackToken = useCallback((v: string) => setState((p) => ({ ...p, slackToken: v })), []);
 
   const setInstallProgress = useCallback((percent: number, message: string, log?: string) => {
@@ -342,7 +346,9 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
       channels: Array.from(state.channels).filter((c) => c !== "none"),
       phoneNumber: state.phoneNumber || undefined,
       telegramToken: state.telegramToken || undefined,
+      telegramUserId: state.telegramUserId || undefined,
       discordToken: state.discordToken || undefined,
+      discordUserId: state.discordUserId || undefined,
       slackToken: state.slackToken || undefined,
     };
   }, [state]);
@@ -375,12 +381,7 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
       agentEmoji: state.agentEmoji,
       primaryModel: state.primaryModel,
       fallbackModel: state.fallbackModel,
-      apiKey: state.apiKey,
       channels: Array.from(state.channels),
-      phoneNumber: state.phoneNumber,
-      telegramToken: state.telegramToken,
-      discordToken: state.discordToken,
-      slackToken: state.slackToken,
       gatewayToken: state.gatewayToken,
       gatewayAuthEnabled: state.gatewayAuthEnabled,
     });
@@ -414,7 +415,7 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
         setPrimaryModel, setFallbackModel,
         setApiKey,
         toggleChannel,
-        setPhoneNumber, setTelegramToken, setDiscordToken, setSlackToken,
+        setPhoneNumber, setTelegramToken, setTelegramUserId, setDiscordToken, setDiscordUserId, setSlackToken,
         setInstallProgress, setInstallComplete,
         buildConfig,
         needsApiKey, needsCredentials, isDockerDeployment,

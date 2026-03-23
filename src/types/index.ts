@@ -81,7 +81,9 @@ export interface InstallConfig {
   channels: string[];
   phoneNumber?: string;
   telegramToken?: string;
+  telegramUserId?: string;
   discordToken?: string;
+  discordUserId?: string;
   slackToken?: string;
 }
 
@@ -121,6 +123,7 @@ export interface SystemCheckResult {
   nodeInstalled: boolean;
   nodeVersion: string | null;
   nodeMeetsRequirement: boolean;
+  nodeMeetsRecommended: boolean;
   portAvailable: boolean;
   diskSpaceGB: number;
   diskSpaceMeetsRequirement: boolean;
@@ -361,6 +364,8 @@ export interface OpenClawState {
     agentName: string;
     primaryModel: string;
   };
+  /** Preferred UI language set during installation */
+  language?: "es" | "en";
 }
 
 export interface AuditLogEntry {

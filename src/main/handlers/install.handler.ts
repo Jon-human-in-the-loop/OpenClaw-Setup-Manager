@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import http from "node:http";
 import type { InstallConfig, HealthcheckResult } from "../../types";
-import { emit } from "../../utils/ipc";
+import { getMainWindow } from "../index";
 import { updateState } from "./state.handler";
 import { saveSecret, getSecret } from "../keychain";
 
@@ -146,18 +146,9 @@ async function installDocker(
   } else {
     await runCommand(
       win,
-      "curl",
-      ["-fsSL", "https://get.docker.com"],
-      startPercent,
-      startPercent + 50,
-      "Descargando Docker..."
-    );
-
-    await runCommand(
-      win,
       "sh",
       ["-c", "curl -fsSL https://get.docker.com | sudo sh"],
-      startPercent + 50,
+      startPercent,
       endPercent,
       "Instalando Docker..."
     );
@@ -186,7 +177,7 @@ function generateOpenClawConfig(config: InstallConfig, gatewayToken: string): st
     channels.telegram = {
       enabled: true,
       botToken: config.telegramToken,
-      allowFrom: ["YOUR_TELEGRAM_USER_ID"],
+      allowFrom: config.telegramUserId ? [config.telegramUserId] : [],
       groups: { "*": { requireMention: true } },
     };
   }
@@ -195,7 +186,7 @@ function generateOpenClawConfig(config: InstallConfig, gatewayToken: string): st
     channels.discord = {
       enabled: true,
       token: config.discordToken,
-      dm: { enabled: true, allowFrom: ["YOUR_DISCORD_USER_ID"] },
+      dm: { enabled: true, allowFrom: config.discordUserId ? [config.discordUserId] : [] },
     };
   }
 
@@ -354,8 +345,9 @@ export function performHealthcheck(
 
 // ─── MAIN INSTALLATION HANDLER ───────────────────────────────
 
-export function registerInstallHandlers(win: BrowserWindow | null): void {
+export function registerInstallHandlers(): void {
   ipcMain.handle("install:start", async (_, config: InstallConfig) => {
+    const win = getMainWindow();
     const homeDir = homedir();
     const openClawDir = join(homeDir, ".openclaw");
 
@@ -381,6 +373,43 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
         } satisfies InstallProgressEvent);
 
         await installDocker(win, 10, 35);
+
+        // Wait for Docker daemon to become ready (up to 2 minutes)
+        emit(win, "install:progress", {
+          percent: 36,
+          message:
+            config.language === "es"
+              ? "Esperando que Docker inicie..."
+              : "Waiting for Docker to start...",
+        } satisfies InstallProgressEvent);
+
+        const maxWaitMs = 120_000;
+        const pollIntervalMs = 5_000;
+        const startWait = Date.now();
+        let daemonReady = false;
+
+        while (!daemonReady && Date.now() - startWait < maxWaitMs) {
+          daemonReady = await isDockerInstalled();
+          if (!daemonReady) {
+            const elapsed = Math.floor((Date.now() - startWait) / 1000);
+            emit(win, "install:progress", {
+              percent: 37,
+              message:
+                config.language === "es"
+                  ? `Docker aún iniciando... (${elapsed}s)`
+                  : `Docker still starting... (${elapsed}s)`,
+            } satisfies InstallProgressEvent);
+            await new Promise((r) => setTimeout(r, pollIntervalMs));
+          }
+        }
+
+        if (!daemonReady) {
+          throw new Error(
+            config.language === "es"
+              ? "Docker no respondió tras 2 minutos. Por favor inícialo manualmente y vuelve a intentar."
+              : "Docker did not respond after 2 minutes. Please start it manually and try again."
+          );
+        }
       }
 
       // PASO 2: Crear estructura de directorios
@@ -458,7 +487,7 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
         "docker",
         ["compose", "-f", composePath, "pull"],
         70,
-        85,
+        80,
         config.language === "es"
           ? "Descargando imagen..."
           : "Downloading image...",
@@ -466,7 +495,7 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
       );
 
       emit(win, "install:progress", {
-        percent: 85,
+        percent: 80,
         message:
           config.language === "es"
             ? "Levantando servicios..."
@@ -477,9 +506,10 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
         win,
         "docker",
         ["compose", "-f", composePath, "up", "-d"],
-        75,
-        85,
-        config.language === "es" ? "Levantando contenedor..." : "Starting container..."
+        80,
+        90,
+        config.language === "es" ? "Levantando contenedor..." : "Starting container...",
+        envVars
       );
 
       // PASO 8: Healthcheck real (reemplaza el antiguo setTimeout)
@@ -509,6 +539,7 @@ export function registerInstallHandlers(win: BrowserWindow | null): void {
         installed: true,
         deploymentMode: config.deploymentType,
         version: "latest", // Por defecto antes de Epic 4
+        language: config.language,
         agentConfig: {
           agentName: config.agentName,
           primaryModel: config.primaryModel,
