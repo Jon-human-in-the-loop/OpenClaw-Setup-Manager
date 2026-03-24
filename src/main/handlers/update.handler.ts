@@ -3,7 +3,6 @@ import { autoUpdater } from "electron-updater";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
-import os from "node:os";
 import fs from "node:fs/promises";
 import https from "node:https";
 import http from "node:http";
@@ -11,6 +10,7 @@ import semver from "semver";
 import type { UpdateInfo, UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../../types";
 import { logAction } from "../db";
 import { getSecret } from "../keychain";
+import { wrapDockerCmd, getOpenClawLinuxDir, wslForwardEnv } from "../wsl-utils";
 
 const execAsync = promisify(exec);
 
@@ -176,7 +176,9 @@ function fetchDockerTags(repo: string): Promise<string[]> {
 }
 
 function getComposePath(): string {
-  return path.join(os.homedir(), ".openclaw", "docker-compose.yml");
+  // Returns the Linux-style path used in docker commands.
+  // On Windows this is the WSL path; on macOS/Linux it's the regular home path.
+  return path.join(getOpenClawLinuxDir(), "docker-compose.yml").replace(/\\/g, "/");
 }
 
 export function registerVersionControlHandlers(): void {
@@ -247,11 +249,15 @@ export function registerVersionControlHandlers(): void {
 
       // 3. Pull new image (may fail if tag doesn't exist)
       const targetImage = `openclaw/agent:${newTag}`;
-      const envVars = { ...process.env, LLM_API_KEY: getSecret("LLM_API_KEY") || "" };
-      
+      const envVars = {
+        ...process.env,
+        LLM_API_KEY: getSecret("LLM_API_KEY") || "",
+        ...wslForwardEnv(["LLM_API_KEY"]),
+      };
+
       try {
         logAction("update:apply-version", `pulling ${targetImage}`, "in-progress");
-        await execAsync(`docker pull ${targetImage}`, { cwd: workingDir, timeout: 120_000, env: envVars });
+        await execAsync(wrapDockerCmd(`pull ${targetImage}`), { timeout: 120_000, env: envVars });
       } catch (pullErr) {
         // Restore backup
         await fs.writeFile(composePath, originalContent, "utf-8");
@@ -260,16 +266,16 @@ export function registerVersionControlHandlers(): void {
       }
 
       // 4. Stop current containers
-      await execAsync("docker compose down", { cwd: workingDir, timeout: 60_000, env: envVars }).catch(() => null);
+      await execAsync(wrapDockerCmd(`compose -f "${composePath}" down`), { timeout: 60_000, env: envVars }).catch(() => null);
 
       // 5. Start with new version
       try {
         logAction("update:apply-version", `starting containers with ${newTag}`, "in-progress");
-        await execAsync("docker compose up -d", { cwd: workingDir, timeout: 60_000, env: envVars });
+        await execAsync(wrapDockerCmd(`compose -f "${composePath}" up -d`), { timeout: 60_000, env: envVars });
       } catch (upErr) {
         // Restore backup and re-start old version
         await fs.writeFile(composePath, originalContent, "utf-8");
-        await execAsync("docker compose up -d", { cwd: workingDir, timeout: 60_000, env: envVars }).catch(() => null);
+        await execAsync(wrapDockerCmd(`compose -f "${composePath}" up -d`), { timeout: 60_000, env: envVars }).catch(() => null);
         notifyRollback(`docker compose up failed: ${String(upErr)}`);
         throw new Error(`El nuevo contenedor no arrancó. Se ha restaurado la versión anterior.`);
       }

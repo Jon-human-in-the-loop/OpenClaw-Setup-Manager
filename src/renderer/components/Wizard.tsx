@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useInstallation } from "@/context/InstallationContext";
 import { Welcome } from "@/pages/Welcome";
 import { SystemCheck } from "@/pages/SystemCheck";
+import { WslSetup } from "@/pages/WslSetup";
 import { Deployment } from "@/pages/Deployment";
 import { SecuritySetup } from "@/pages/SecuritySetup";
 import { SetupType } from "@/pages/SetupType";
@@ -17,6 +18,7 @@ import { ControlCenter } from "@/pages/ControlCenter";
 const PAGE_COMPONENTS = {
   "welcome": Welcome,
   "system-check": SystemCheck,
+  "wsl-setup": WslSetup,
   "deployment": Deployment,
   "security": SecuritySetup,
   "setup-type": SetupType,

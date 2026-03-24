@@ -238,9 +238,10 @@ export function ControlCenter(): JSX.Element {
     } catch (err) {
       setActionMessage(err instanceof Error ? err.message : "Error exporting diagnostics");
     } finally {
+      setActionInProgress(null);
     }
   };
-  
+
   const handleViewAuditLogs = async () => {
     setActionInProgress("logs");
     try {
@@ -255,8 +256,8 @@ export function ControlCenter(): JSX.Element {
   };
 
   const handleBackup = async () => {
-    if (!backupPassword || backupPassword.length < 4) {
-      setBackupMessage(language === "es" ? "La contraseña debe tener al menos 4 caracteres." : "Password must be at least 4 characters.");
+    if (!backupPassword || backupPassword.length < 12) {
+      setBackupMessage(language === "es" ? "La contraseña debe tener al menos 12 caracteres." : "Password must be at least 12 characters.");
       return;
     }
     setBackupLoading(true);

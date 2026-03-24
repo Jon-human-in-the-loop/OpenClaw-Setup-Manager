@@ -161,15 +161,11 @@ function getPlatformCapabilities(): PlatformCapabilities {
       recommendedDeployment = "local";
     }
   } else if (os_platform === "win32") {
-    // Windows: local es el principal
-    availableDeployments = ["local"];
-    recommendedDeployment = "local";
-
-    if (wsl2Available) {
-      availableDeployments.push("wsl2-docker");
-      // En Windows no cambiamos la recomendación: local sigue siendo la opción
-      // principal para usuarios no técnicos; WSL2 es "avanzado"
-    }
+    // Windows: Docker runs through WSL2. wsl2-docker is the only supported
+    // containerised deployment and is always recommended when WSL is present
+    // (or being set up in the wsl-setup wizard step).
+    availableDeployments = ["wsl2-docker"];
+    recommendedDeployment = "wsl2-docker";
   }
 
   return {

@@ -14,8 +14,9 @@ import { saveInstallationState, loadInstallationState, clearInstallationState } 
 export type WizardStep =
   | "welcome"
   | "system-check"
-  | "deployment"       // NUEVO: selección de entorno (local / Docker / WSL2)
-  | "security"         // NUEVO: token de gateway + advertencias
+  | "wsl-setup"        // Windows only: WSL2 + Ubuntu setup
+  | "deployment"       // selección de entorno (local / Docker / WSL2)
+  | "security"         // token de gateway + advertencias
   | "setup-type"
   | "agent-name"
   | "model"
@@ -24,11 +25,12 @@ export type WizardStep =
   | "credentials"
   | "installing"
   | "success"
-  | "control-center";  // NEW: post-install control panel
+  | "control-center";  // post-install control panel
 
 export const WIZARD_STEPS: WizardStep[] = [
   "welcome",
   "system-check",
+  "wsl-setup",
   "deployment",
   "security",
   "setup-type",
@@ -191,6 +193,11 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
   const computeNextStep = useCallback((current: WizardStep, st: InstallationState): WizardStep => {
     const idx = WIZARD_STEPS.indexOf(current);
 
+    // Skip wsl-setup on non-Windows
+    if (current === "system-check" && st.platformCapabilities?.os !== "win32") {
+      return "deployment";
+    }
+
     // Skip api-key si modelo local o quick setup
     if (current === "model") {
       const isLocal = st.primaryModel.startsWith("ollama/");
@@ -208,6 +215,11 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
 
   const computePrevStep = useCallback((current: WizardStep, st: InstallationState): WizardStep => {
     const idx = WIZARD_STEPS.indexOf(current);
+
+    // Skip wsl-setup on non-Windows
+    if (current === "deployment" && st.platformCapabilities?.os !== "win32") {
+      return "system-check";
+    }
 
     if (current === "channels") {
       const isLocal = st.primaryModel.startsWith("ollama/");
@@ -356,10 +368,11 @@ export function InstallationProvider({ children }: { children: ReactNode }): JSX
   // ─── Persistence ───────────────────────────────────────────────────────────
 
   useEffect(() => {
-    // Don't persist if still on welcome, system-check, deployment, security, or success
+    // Don't persist if still on welcome, system-check, wsl-setup, deployment, security, or success
     if (
       state.step === "welcome" ||
       state.step === "system-check" ||
+      state.step === "wsl-setup" ||
       state.step === "deployment" ||
       state.step === "security" ||
       state.step === "success" ||
