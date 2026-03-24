@@ -201,7 +201,7 @@ export function registerVersionControlHandlers(): void {
   ipcMain.handle("update:get-current-version", async () => {
     try {
       const composePath = getComposePath();
-      if (!(await fs.exists(composePath))) return { success: false, version: null };
+      try { await fs.access(composePath); } catch { return { success: false, version: null }; }
       
       const content = await fs.readFile(composePath, "utf-8");
       // Buscar la linea de la imagen de openclaw
