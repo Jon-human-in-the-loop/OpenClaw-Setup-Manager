@@ -69,7 +69,7 @@ export function validateTelegramToken(token: string): ValidationResult {
     return { valid: false, error: "El token no puede estar vacío", errorEn: "Token cannot be empty" };
   }
   // Format: 123456789:ABCdefGHIjklMNOpqrstUVwxyz
-  if (!/^\d{8,12}:[a-zA-Z0-9_-]{35}$/.test(trimmed)) {
+  if (!/^\d{8,12}:[a-zA-Z0-9_-]{35,50}$/.test(trimmed)) {
     return {
       valid: false,
       error: "Formato inválido. Debe ser: 123456789:ABCdef...",
