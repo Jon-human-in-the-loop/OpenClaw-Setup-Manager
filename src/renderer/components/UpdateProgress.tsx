@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { useUpdate } from "../context/UpdateContext";
 import { AlertCircle } from "lucide-react";

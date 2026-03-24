@@ -1,8 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Play, Square, RotateCw, Settings, Terminal, ExternalLink, 
-  Activity, CheckCircle2, XCircle, AlertCircle, RefreshCw, 
-  ChevronRight, Wrench, FileWarning, Search, Zap, Check, Download, Loader2, ScrollText,
+import {
+  Play, Square, RotateCw, Terminal, ExternalLink,
+  CheckCircle2, XCircle, AlertCircle, RefreshCw,
+  Wrench, Download, Loader2, ScrollText,
   Circle
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";

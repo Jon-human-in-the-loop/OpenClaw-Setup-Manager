@@ -1,7 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
   InstallConfig,
-  SystemCheckResult,
   InstallProgressEvent,
   InstallCompleteEvent,
   UpdateCheckResult,
