@@ -222,7 +222,7 @@ export function registerSystemHandlers(): void {
 
     // Linux / macOS: use sudo-prompt to run the official install script
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const sudoPrompt = require("sudo-prompt") as {
+    const sudoPrompt = require("@vscode/sudo-prompt") as {
       exec: (cmd: string, opts: { name: string }, cb: (err?: Error, stdout?: string) => void) => void;
     };
 
