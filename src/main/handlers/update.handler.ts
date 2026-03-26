@@ -5,9 +5,7 @@ import { promisify } from "node:util";
 import path from "node:path";
 import fs from "node:fs/promises";
 import https from "node:https";
-import http from "node:http";
-import semver from "semver";
-import type { UpdateInfo, UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../../types";
+import type { UpdateCheckResult, UpdateProgressEvent, UpdateErrorEvent, UpdatePreferences } from "../../types";
 import { logAction } from "../db";
 import { getSecret } from "../keychain";
 import { wrapDockerCmd, getOpenClawLinuxDir, wslForwardEnv } from "../wsl-utils";
@@ -149,7 +147,7 @@ export function registerUpdateHandlers() {
  * Consulta Docker Hub para obtener los últimos tags de openclaw/agent
  */
 function fetchDockerTags(repo: string): Promise<string[]> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const url = `https://hub.docker.com/v2/repositories/${repo}/tags/?page_size=20`;
     https.get(url, { headers: { "User-Agent": "OpenClaw-Installer/1.0" } }, (res) => {
       let data = "";
@@ -201,7 +199,7 @@ export function registerVersionControlHandlers(): void {
   ipcMain.handle("update:get-current-version", async () => {
     try {
       const composePath = getComposePath();
-      if (!(await fs.exists(composePath))) return { success: false, version: null };
+      try { await fs.access(composePath); } catch { return { success: false, version: null }; }
       
       const content = await fs.readFile(composePath, "utf-8");
       // Buscar la linea de la imagen de openclaw
@@ -219,7 +217,6 @@ export function registerVersionControlHandlers(): void {
   ipcMain.handle("update:apply-version", async (_, newTag: string) => {
     const composePath = getComposePath();
     const backupPath = composePath + ".backup";
-    const workingDir = path.dirname(composePath);
     let originalContent: string | null = null;
 
     const notifyRollback = (reason: string) => {

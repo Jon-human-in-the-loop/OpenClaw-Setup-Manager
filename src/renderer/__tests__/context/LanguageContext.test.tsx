@@ -124,14 +124,14 @@ describe("LanguageContext", () => {
       fireEvent.click(toggleButton);
 
       await waitFor(() => {
-        const stored = localStorage.getItem("app-language");
+        const stored = localStorage.getItem("openclaw-installer-lang");
         expect(stored).toBeTruthy();
         expect(["es", "en"]).toContain(stored);
       });
     });
 
     it("should restore language from localStorage on mount", () => {
-      localStorage.setItem("app-language", "en");
+      localStorage.setItem("openclaw-installer-lang", "en");
 
       render(
         <LanguageProvider>
@@ -168,7 +168,7 @@ describe("LanguageContext", () => {
       fireEvent.click(toggleButton);
 
       await waitFor(() => {
-        const stored = localStorage.getItem("app-language");
+        const stored = localStorage.getItem("openclaw-installer-lang");
         const displayed = screen.getByTestId("current-language").textContent;
         expect(stored).toBe(displayed);
       });

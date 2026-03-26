@@ -151,16 +151,16 @@ export interface SystemCheckResult {
 
   // ── Campos nuevos (Fase 2: Motor de diagnóstico) ──
   /** Docker Compose disponible */
-  dockerComposeAvailable: boolean;
-  dockerComposeVersion: string | null;
+  dockerComposeAvailable?: boolean;
+  dockerComposeVersion?: string | null;
   /** Ollama daemon está ejecutándose */
-  ollamaRunning: boolean;
+  ollamaRunning?: boolean;
   /** Puerto 3000 (dashboard) disponible */
-  dashboardPortAvailable: boolean;
+  dashboardPortAvailable?: boolean;
   /** Hay conectividad a internet */
-  internetConnected: boolean;
+  internetConnected?: boolean;
   /** Lista estructurada de diagnósticos con severidad */
-  diagnostics: DiagnosticCheck[];
+  diagnostics?: DiagnosticCheck[];
 }
 
 export interface InstallProgressEvent {
@@ -254,18 +254,6 @@ export interface InstallationSession {
   telegramToken?: string;
   discordToken?: string;
   slackToken?: string;
-
-  system: {
-    check: () => Promise<SystemCheckResult>;
-    openUrl: (url: string) => Promise<void>;
-    reboot: () => Promise<{ success: boolean; error?: string }>;
-  };
-  wsl: {
-    install: (distro: string) => Promise<{ success: boolean; error?: string }>;
-  };
-  deps: {
-    install: (depId: string) => Promise<{ success: boolean; error?: string }>;
-  };
 
   // Progress tracking
   completedSteps: WizardStep[];

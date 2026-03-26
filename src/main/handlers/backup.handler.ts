@@ -3,7 +3,6 @@ import { execSync } from "node:child_process";
 import { createCipheriv, createDecipheriv, pbkdf2Sync, randomBytes } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
 import JSZip from "jszip";
 import { wrapDockerCmd, getOpenClawDir } from "../wsl-utils";
 

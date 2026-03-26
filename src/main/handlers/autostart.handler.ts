@@ -1,5 +1,4 @@
 import { ipcMain, app } from "electron";
-import { resolve } from "node:path";
 
 // In development, app.getPath("exe") points to the electron binary, which might not be what you want to auto-start.
 // But we assume auto-start is mainly for production builds where app.isPackaged is true.

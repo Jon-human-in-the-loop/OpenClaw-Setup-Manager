@@ -4,7 +4,7 @@ import { BrowserWindow } from "electron";
 
 let logProcess: ChildProcess | null = null;
 
-export function startDockerLogStream(containerName: string, win: BrowserWindow | null): void {
+export function startDockerLogStream(containerName: string, _win: BrowserWindow | null): void {
   if (logProcess) {
     logProcess.kill();
   }
@@ -15,12 +15,12 @@ export function startDockerLogStream(containerName: string, win: BrowserWindow |
     shell: true,
   });
 
-  const handleLine = (data: Buffer, defaultLevel: "INFO" | "ERROR") => {
+  const handleLine = (data: Buffer, defaultLevel: "INFO" | "WARN" | "ERROR") => {
     const lines = data.toString().split("\n");
     for (const rawLine of lines) {
       if (!rawLine.trim()) continue;
 
-      let level = defaultLevel;
+      let level: "INFO" | "WARN" | "ERROR" = defaultLevel;
       const upperLine = rawLine.toUpperCase();
 
       // Heuristic for log levels if the container doesn't use JSON logs

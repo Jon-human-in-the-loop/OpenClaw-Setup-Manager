@@ -40,7 +40,7 @@ export async function readState(): Promise<OpenClawState> {
 export async function writeState(state: OpenClawState): Promise<boolean> {
   try {
     for (const key of STATE_KEYS) {
-      const value = (state as Record<string, unknown>)[key];
+      const value = (state as unknown as Record<string, unknown>)[key];
       if (value !== undefined) {
         setState(key, JSON.stringify(value));
       }

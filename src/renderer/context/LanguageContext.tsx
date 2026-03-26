@@ -15,7 +15,7 @@ function detectLanguage(): Language {
   if (stored === "es" || stored === "en") return stored;
 
   const systemLang = navigator.language.toLowerCase();
-  return systemLang.startsWith("es") ? "es" : "en";
+  return systemLang.startsWith("en") ? "en" : "es";
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }): JSX.Element {
