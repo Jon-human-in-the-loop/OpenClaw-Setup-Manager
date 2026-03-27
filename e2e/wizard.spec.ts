@@ -1,15 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test.describe('OpenClaw Installer - Wizard Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to app
-    await page.goto('http://localhost:5173')
-    // Wait for app to load
-    await page.waitForTimeout(1000)
-  })
-
   test('should display Welcome page on load', async ({ page }) => {
-    // Check for Welcome page elements
     await expect(page.getByText(/welcome/i)).toBeVisible()
     await expect(page.getByRole('button', { name: /next/i })).toBeVisible()
   })
@@ -71,7 +63,6 @@ test.describe('OpenClaw Installer - Wizard Flow', () => {
   })
 
   test('should display step indicator', async ({ page }) => {
-    // Check for step indicator (visual progress)
     const stepIndicator = page.locator('[role="progressbar"], .step-indicator, [class*="progress"]')
     if (await stepIndicator.first().isVisible()) {
       await expect(stepIndicator.first()).toBeVisible()

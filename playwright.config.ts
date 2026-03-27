@@ -1,37 +1,20 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false, // Sequential for Electron app
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1, // Single worker for Electron
+  workers: 1,
   reporter: [['html'], ['list']],
   use: {
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-
-  webServer: {
-    command: 'npm run dev',
-    port: 5173,
-    reuseExistingServer: false,
-    timeout: 120 * 1000,
-    env: {
-      ...process.env,
-      ELECTRON_DISABLE_SANDBOX: '1',
-    },
-  },
-
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: 'electron',
     },
   ],
 })
