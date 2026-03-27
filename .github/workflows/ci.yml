@@ -67,8 +67,8 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install
 
-      - name: Rebuild native modules
-        run: npm rebuild
+      - name: Rebuild native modules for Electron
+        run: npx @electron/rebuild -f -w better-sqlite3
 
       - name: Build app
         run: npm run build
