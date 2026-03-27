@@ -18,6 +18,10 @@ export default defineConfig({
     port: 5173,
     reuseExistingServer: false,
     timeout: 120 * 1000,
+    env: {
+      ...process.env,
+      ELECTRON_DISABLE_SANDBOX: '1',
+    },
   },
 
   projects: [
