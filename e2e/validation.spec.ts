@@ -3,24 +3,24 @@ import { test, expect } from './fixtures'
 test.describe('OpenClaw Installer - Validation', () => {
   test('should validate API key format', async ({ page }) => {
     for (let i = 0; i < 5; i++) {
-      await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+      await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
       await page.waitForTimeout(300)
     }
 
     const apiInput = page.getByLabel(/api key/i)
     if (await apiInput.isVisible()) {
       await apiInput.fill('invalid')
-      await expect(page.getByRole('button', { name: /next|start|continue/i }).first()).toBeDisabled()
+      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeDisabled()
 
       await apiInput.clear()
       await apiInput.fill('sk-1234567890abcdef')
-      await expect(page.getByRole('button', { name: /next|start|continue/i }).first()).toBeEnabled()
+      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeEnabled()
     }
   })
 
   test('should validate Telegram token', async ({ page }) => {
     for (let i = 0; i < 6; i++) {
-      await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+      await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
       await page.waitForTimeout(300)
     }
 
@@ -30,30 +30,30 @@ test.describe('OpenClaw Installer - Validation', () => {
       await expect(telegramInput).toHaveValue('')
 
       await telegramInput.fill('123456789:ABCdefGHIjklmnoPQRstuvWXYZabc')
-      await expect(page.getByRole('button', { name: /next|start|continue/i }).first()).toBeEnabled()
+      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeEnabled()
     }
   })
 
   test('should validate phone number format', async ({ page }) => {
     for (let i = 0; i < 6; i++) {
-      await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+      await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
       await page.waitForTimeout(300)
     }
 
     const phoneInput = page.getByLabel(/phone|whatsapp/i)
     if (await phoneInput.isVisible()) {
       await phoneInput.fill('abc')
-      await expect(page.getByRole('button', { name: /next|start|continue/i }).first()).toBeDisabled()
+      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeDisabled()
 
       await phoneInput.clear()
       await phoneInput.fill('+34912345678')
-      await expect(page.getByRole('button', { name: /next|start|continue/i }).first()).toBeEnabled()
+      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeEnabled()
     }
   })
 
   test('should handle whitespace in inputs', async ({ page }) => {
     for (let i = 0; i < 3; i++) {
-      await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+      await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
       await page.waitForTimeout(300)
     }
 
@@ -66,7 +66,7 @@ test.describe('OpenClaw Installer - Validation', () => {
 
   test('should show validation error messages', async ({ page }) => {
     for (let i = 0; i < 3; i++) {
-      await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+      await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
       await page.waitForTimeout(300)
     }
 
@@ -84,7 +84,7 @@ test.describe('OpenClaw Installer - Validation', () => {
 
   test('should validate channel selection', async ({ page }) => {
     for (let i = 0; i < 6; i++) {
-      await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+      await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
       await page.waitForTimeout(300)
     }
 

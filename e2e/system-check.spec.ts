@@ -2,13 +2,13 @@ import { test, expect } from './fixtures'
 
 test.describe('OpenClaw Installer - System Check', () => {
   test('should display System Check page', async ({ page }) => {
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(500)
     await expect(page.getByText(/system|check/i)).toBeVisible()
   })
 
   test('should show system requirements', async ({ page }) => {
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(500)
 
     const requirements = page.locator('[class*="requirement"], [class*="check"], li')
@@ -19,7 +19,7 @@ test.describe('OpenClaw Installer - System Check', () => {
   })
 
   test('should handle missing requirements gracefully', async ({ page }) => {
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(1500)
 
     const statusElements = page.locator('[class*="status"], [class*="ok"], [class*="fail"], [aria-label*="check"]')
@@ -29,10 +29,10 @@ test.describe('OpenClaw Installer - System Check', () => {
   })
 
   test('should allow navigation after system check completes', async ({ page }) => {
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(2000)
 
-    const nextBtn = page.getByRole('button', { name: /next|start|continue/i }).first()
+    const nextBtn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
     const startTime = Date.now()
     let isEnabled = false
 
@@ -47,7 +47,7 @@ test.describe('OpenClaw Installer - System Check', () => {
   })
 
   test('should display appropriate icons/indicators for each requirement', async ({ page }) => {
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(2000)
 
     const passIndicators = page.locator('[class*="pass"], [class*="success"]')

@@ -2,33 +2,34 @@ import { test, expect } from './fixtures'
 
 test.describe('OpenClaw Installer - Wizard Flow', () => {
   test('should display Welcome page on load', async ({ page }) => {
-    await expect(page.getByText(/welcome/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /next|start|continue/i })).toBeVisible()
+    // The Welcome page title is "Install OpenClaw in 5 minutes" — not "welcome"
+    await expect(page.getByText(/install openclaw/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeVisible()
   })
 
   test('should navigate through wizard steps', async ({ page }) => {
     // Welcome → System Check
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(500)
-    await expect(page.getByText(/system/i)).toBeVisible()
+    await expect(page.getByText(/checking|system/i).first()).toBeVisible()
 
     // System Check → Setup Type
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(500)
-    await expect(page.getByText(/setup/i)).toBeVisible()
+    await expect(page.getByText(/setup|install/i).first()).toBeVisible()
   })
 
   test('should validate agent name input', async ({ page }) => {
-    // Navigate to Agent Name step
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click() // System Check
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click() // Setup Type
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click() // Agent Name
+    // Navigate to Agent Name step (Welcome→SystemCheck→SetupType→AgentName)
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click() // Welcome → SystemCheck
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click() // SystemCheck → SetupType
+    await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()          // SetupType → AgentName
 
-    // Try to submit empty name
-    const nextBtn = page.getByRole('button', { name: /next|start|continue/i }).first()
+    // Try to submit empty name — Next button should be disabled
+    const nextBtn = page.getByRole('button', { name: /^next$|^siguiente$/i }).first()
     await expect(nextBtn).toBeDisabled()
 
-    // Enter valid name
+    // Enter valid name — Next button should become enabled
     await page.getByLabel(/agent name/i).fill('TestAgent')
     await expect(nextBtn).toBeEnabled()
   })
@@ -49,16 +50,17 @@ test.describe('OpenClaw Installer - Wizard Flow', () => {
   })
 
   test('should go back through wizard steps', async ({ page }) => {
-    // Navigate forward
-    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
+    // Navigate forward to SystemCheck
+    await page.getByRole('button', { name: /next|start_install|continue/i }).first().click()
     await page.waitForTimeout(500)
 
-    // Go back
+    // Go back to Welcome
     const backBtn = page.getByRole('button', { name: /back|previous/i }).first()
     if (await backBtn.isVisible()) {
       await backBtn.click()
       await page.waitForTimeout(500)
-      await expect(page.getByText(/welcome/i)).toBeVisible()
+      // Welcome page title is "Install OpenClaw in 5 minutes"
+      await expect(page.getByText(/install openclaw/i)).toBeVisible()
     }
   })
 
