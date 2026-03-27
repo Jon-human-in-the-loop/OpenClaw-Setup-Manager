@@ -10,7 +10,7 @@ export async function findFreePort(startPort = 3000): Promise<number> {
   // Collect ports already in use by registered instances
   const db = getDb();
   const usedPorts = new Set<number>(
-    (db.prepare("SELECT port FROM instances").all() as { port: number }[]).map((r) => r.port)
+    db ? (db.prepare("SELECT port FROM instances").all() as { port: number }[]).map((r) => r.port) : []
   );
 
   let port = startPort;
