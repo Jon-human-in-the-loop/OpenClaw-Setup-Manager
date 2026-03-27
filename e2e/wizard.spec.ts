@@ -3,29 +3,29 @@ import { test, expect } from './fixtures'
 test.describe('OpenClaw Installer - Wizard Flow', () => {
   test('should display Welcome page on load', async ({ page }) => {
     await expect(page.getByText(/welcome/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /next/i })).toBeVisible()
+    await expect(page.getByRole('button', { name: /next|start|continue/i })).toBeVisible()
   })
 
   test('should navigate through wizard steps', async ({ page }) => {
     // Welcome → System Check
-    await page.getByRole('button', { name: /next/i }).first().click()
+    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
     await page.waitForTimeout(500)
     await expect(page.getByText(/system/i)).toBeVisible()
 
     // System Check → Setup Type
-    await page.getByRole('button', { name: /next/i }).first().click()
+    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
     await page.waitForTimeout(500)
     await expect(page.getByText(/setup/i)).toBeVisible()
   })
 
   test('should validate agent name input', async ({ page }) => {
     // Navigate to Agent Name step
-    await page.getByRole('button', { name: /next/i }).first().click() // System Check
-    await page.getByRole('button', { name: /next/i }).first().click() // Setup Type
-    await page.getByRole('button', { name: /next/i }).first().click() // Agent Name
+    await page.getByRole('button', { name: /next|start|continue/i }).first().click() // System Check
+    await page.getByRole('button', { name: /next|start|continue/i }).first().click() // Setup Type
+    await page.getByRole('button', { name: /next|start|continue/i }).first().click() // Agent Name
 
     // Try to submit empty name
-    const nextBtn = page.getByRole('button', { name: /next/i }).first()
+    const nextBtn = page.getByRole('button', { name: /next|start|continue/i }).first()
     await expect(nextBtn).toBeDisabled()
 
     // Enter valid name
@@ -50,7 +50,7 @@ test.describe('OpenClaw Installer - Wizard Flow', () => {
 
   test('should go back through wizard steps', async ({ page }) => {
     // Navigate forward
-    await page.getByRole('button', { name: /next/i }).first().click()
+    await page.getByRole('button', { name: /next|start|continue/i }).first().click()
     await page.waitForTimeout(500)
 
     // Go back
