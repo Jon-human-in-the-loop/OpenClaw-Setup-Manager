@@ -46,7 +46,7 @@ export function AgentName(): JSX.Element {
         >
           {/* Name input */}
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
+            <label htmlFor="agent-name" className="block text-xs font-medium text-foreground mb-1.5">
               {t(language, "agentname.label")}
             </label>
             <div className="relative">
@@ -54,6 +54,7 @@ export function AgentName(): JSX.Element {
                 {selectedEmoji}
               </span>
               <input
+                id="agent-name"
                 type="text"
                 value={agentName}
                 onChange={(e) => setAgentName(e.target.value)}
