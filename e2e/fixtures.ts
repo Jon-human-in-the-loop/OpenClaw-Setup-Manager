@@ -52,35 +52,26 @@ export const test = base.extend<ElectronFixtures>({
 
   page: async ({ electronApp }, use) => {
     const window = await electronApp.firstWindow()
-    await window.waitForLoadState('domcontentloaded')
+    const context = window.context()
 
-    // Mock system:check AFTER firstWindow() resolves so app.whenReady has already
-    // fired and registerSystemHandlers() has already registered its handlers.
-    // Calling this before app.whenReady would cause a duplicate-handler crash.
+    // Force English language for consistent testing BEFORE the app loads
+    await context.addInitScript(() => {
+      localStorage.setItem('openclaw-installer-lang', 'en');
+    });
+
+    // Mock system:check and other APIs
     await electronApp.evaluate(({ ipcMain }, mock) => {
-      try { ipcMain.removeHandler('system:check') } catch (_) {}
-      try { ipcMain.removeHandler('state:read') } catch (_) {}
-      try { ipcMain.removeHandler('control:status') } catch (_) {}
-      try { ipcMain.removeHandler('session:loadActive') } catch (_) {}
-      try { ipcMain.removeHandler('state:write') } catch (_) {}
+      const handlers = ['system:check', 'state:read', 'control:status', 'session:loadActive', 'state:write'];
+      handlers.forEach(h => { try { ipcMain.removeHandler(h) } catch (_) {} });
 
       ipcMain.handle('system:check', async () => mock)
-      ipcMain.handle('state:read', async () => ({ installed: false }))
+      ipcMain.handle('state:read', async () => ({ installed: false, version: '0.0.0' }))
       ipcMain.handle('control:status', async () => ({ state: 'not-found' }))
       ipcMain.handle('session:loadActive', async () => null)
       ipcMain.handle('state:write', async () => ({ success: true }))
     }, systemCheckMock)
 
-    await window.waitForTimeout(1000)
-
-    // Force English language for consistent testing
-    await window.evaluate(() => {
-      localStorage.setItem('openclaw-installer-lang', 'en');
-    });
-    // Reload to ensure context picks up the change if it already initialized
-    await window.reload();
-    await window.waitForLoadState('domcontentloaded');
-
+    await window.waitForLoadState('domcontentloaded')
     await use(window)
   },
 })

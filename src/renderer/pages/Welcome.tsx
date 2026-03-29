@@ -143,7 +143,9 @@ export function Welcome(): JSX.Element {
             {language === "es" ? "// instala" : "// install"}
           </p>
           <h1 className="text-[2.8rem] font-black tracking-tight leading-none">
-            <span className="sr-only">Install OpenClaw</span>
+            <span style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
+              Install OpenClaw
+            </span>
             <span aria-hidden="true" style={{ color: "#f4f4f5" }}>Open</span>
             <span
               aria-hidden="true"
