@@ -58,11 +58,29 @@ export const test = base.extend<ElectronFixtures>({
     // fired and registerSystemHandlers() has already registered its handlers.
     // Calling this before app.whenReady would cause a duplicate-handler crash.
     await electronApp.evaluate(({ ipcMain }, mock) => {
-      try { ipcMain.removeHandler('system:check') } catch (_) { /* already removed */ }
+      try { ipcMain.removeHandler('system:check') } catch (_) {}
+      try { ipcMain.removeHandler('state:read') } catch (_) {}
+      try { ipcMain.removeHandler('control:status') } catch (_) {}
+      try { ipcMain.removeHandler('session:loadActive') } catch (_) {}
+      try { ipcMain.removeHandler('state:write') } catch (_) {}
+
       ipcMain.handle('system:check', async () => mock)
+      ipcMain.handle('state:read', async () => ({ installed: false }))
+      ipcMain.handle('control:status', async () => ({ state: 'not-found' }))
+      ipcMain.handle('session:loadActive', async () => null)
+      ipcMain.handle('state:write', async () => ({ success: true }))
     }, systemCheckMock)
 
     await window.waitForTimeout(1000)
+
+    // Force English language for consistent testing
+    await window.evaluate(() => {
+      localStorage.setItem('openclaw-installer-lang', 'en');
+    });
+    // Reload to ensure context picks up the change if it already initialized
+    await window.reload();
+    await window.waitForLoadState('domcontentloaded');
+
     await use(window)
   },
 })
