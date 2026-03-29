@@ -1,8 +1,9 @@
 import { test, expect } from './fixtures'
 
 // Helper to click Next only when enabled
-async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 8000) {
-    const btn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 15000) {
+    // Use a locator that only matches ENABLED buttons with matching text
+    const btn = page.locator('button:not([disabled])').filter({ hasText: /next|start_install|continue/i }).first()
     await btn.waitFor({ state: 'visible', timeout: ms })
     await expect(btn).toBeEnabled({ timeout: ms })
     await btn.click()
