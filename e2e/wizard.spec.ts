@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 
 // Helper to click Next only when enabled, waiting up to `ms` milliseconds
 async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 15000) {
-  const btn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+  const btn = page.getByTestId('wizard-next-btn')
   await btn.waitFor({ state: 'visible', timeout: ms })
   await expect(btn).toBeEnabled({ timeout: ms })
   await btn.click()
@@ -12,7 +12,7 @@ test.describe('OpenClaw Installer - Wizard Flow', () => {
   test('should display Welcome page on load', async ({ page }) => {
     // The Welcome page title is "Install OpenClaw in 5 minutes" — not "welcome"
     await expect(page.getByText(/install openclaw/i)).toBeVisible({ timeout: 15000 })
-    await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeVisible()
+    await expect(page.getByTestId('wizard-start-btn')).toBeVisible()
   })
 
   test('should navigate through wizard steps', async ({ page }) => {
@@ -34,12 +34,12 @@ test.describe('OpenClaw Installer - Wizard Flow', () => {
     await clickNextWhenEnabled(page) // Deployment → Security
     await clickNextWhenEnabled(page) // Security → SetupType
     // SetupType → AgentName: click exact Next button
-    const nextExact = page.getByRole('button', { name: /^next$|^siguiente$/i }).first()
+    const nextExact = page.getByTestId('wizard-next-btn')
     await expect(nextExact).toBeEnabled({ timeout: 8000 })
     await nextExact.click()
 
     // Try to submit empty name — Next button should be disabled
-    const nextBtn = page.getByRole('button', { name: /^next$|^siguiente$/i }).first()
+    const nextBtn = page.getByTestId('wizard-next-btn')
     await expect(nextBtn).toBeDisabled()
 
     // Enter valid name — Next button should become enabled

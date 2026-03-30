@@ -142,6 +142,7 @@ export function AgentName(): JSX.Element {
         <button
           onClick={goNext}
           disabled={!canContinue}
+          data-testid="wizard-next-btn"
           className="no-drag flex items-center gap-1.5 px-5 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {t(language, "common.next")}

@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 
 // Helper to click Next only when enabled
 async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 15000) {
-    const btn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+    const btn = page.getByTestId('wizard-next-btn')
     await btn.waitFor({ state: 'visible', timeout: ms })
     await expect(btn).toBeEnabled({ timeout: ms })
     await btn.click()
@@ -41,7 +41,7 @@ test.describe('OpenClaw Installer - System Check', () => {
                       await clickNextWhenEnabled(page)
                       await page.waitForTimeout(2000)
 
-                         const nextBtn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+                         const nextBtn = page.getByTestId('wizard-next-btn')
                       const startTime = Date.now()
                       let isEnabled = false
 

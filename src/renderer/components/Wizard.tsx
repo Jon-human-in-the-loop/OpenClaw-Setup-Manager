@@ -41,10 +41,10 @@ export function Wizard(): JSX.Element {
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
-          initial={{ opacity: 0, x: 20 }}
+          initial={process.env.NODE_ENV === "test" ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          exit={process.env.NODE_ENV === "test" ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+          transition={process.env.NODE_ENV === "test" ? { duration: 0 } : { duration: 0.2, ease: "easeInOut" }}
           className="h-full"
         >
           <PageComponent />

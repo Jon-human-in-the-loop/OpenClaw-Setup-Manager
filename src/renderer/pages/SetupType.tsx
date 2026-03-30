@@ -124,6 +124,7 @@ export function SetupType(): JSX.Element {
         <div className="flex-1" />
         <button
           onClick={goNext}
+          data-testid="wizard-next-btn"
           className="no-drag flex items-center gap-1.5 px-5 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors"
         >
           {t(language, "common.next")}

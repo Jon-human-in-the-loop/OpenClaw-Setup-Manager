@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 
 // Helper to click Next only when enabled
 async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 15000) {
-  const btn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+  const btn = page.getByTestId('wizard-next-btn')
   await btn.waitFor({ state: 'visible', timeout: ms })
   await expect(btn).toBeEnabled({ timeout: ms })
   await btn.click()
@@ -12,8 +12,9 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
   test('should complete full wizard flow with quick setup', async ({ page }) => {
     // Step 1: Welcome — title is "Install OpenClaw in 5 minutes"
     await expect(page.getByText(/install openclaw/i)).toBeVisible({ timeout: 15000 })
-    await clickNextWhenEnabled(page)
-    await page.waitForTimeout(500)
+    const startBtn = page.getByTestId('wizard-start-btn')
+    await expect(startBtn).toBeVisible()
+    await startBtn.click()
 
     // Step 2: System Check
     await expect(page.getByRole('heading', { name: /checking your system/i })).toBeVisible()
@@ -35,13 +36,13 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
     if (await setupOptions.first().isVisible()) {
       await setupOptions.first().click()
     }
-    await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()
+    await page.getByTestId('wizard-next-btn').click()
     await page.waitForTimeout(500)
 
     // Step 4: Agent Name
     await expect(page.getByLabel(/agent name/i)).toBeVisible()
     await page.getByLabel(/agent name/i).fill('TestAgent')
-    await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()
+    await page.getByTestId('wizard-next-btn').click()
     await page.waitForTimeout(500)
 
     // Step 5: Model Selection
@@ -50,14 +51,14 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
     if (await modelOptions.first().isVisible()) {
       await modelOptions.first().click()
     }
-    await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()
+    await page.getByTestId('wizard-next-btn').click()
     await page.waitForTimeout(500)
 
     // Step 6: API Key (optional)
     const apiKeyLabel = page.getByLabel(/api key|openai/i)
     if (await apiKeyLabel.isVisible()) {
       await apiKeyLabel.fill('sk-test-1234567890abcdef')
-      await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()
+      await page.getByTestId('wizard-next-btn').click()
       await page.waitForTimeout(500)
     }
 
@@ -70,7 +71,7 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
         await firstCheckbox.click()
       }
     }
-    await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()
+    await page.getByTestId('wizard-next-btn').click()
     await page.waitForTimeout(500)
 
     // Final: Installation/Success page
@@ -103,7 +104,7 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
     await page.waitForTimeout(500)
     await clickNextWhenEnabled(page)  // Security → SetupType
     await page.waitForTimeout(500)
-    await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()  // SetupType → AgentName
+    await page.getByTestId('wizard-next-btn').click()  // SetupType → AgentName
     await page.waitForTimeout(500)
 
     const agentInput = page.getByLabel(/agent name/i)
@@ -111,7 +112,7 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
       await agentInput.fill('PersistentAgent')
       expect(await agentInput.inputValue()).toBe('PersistentAgent')
 
-      await page.getByRole('button', { name: /^next$|^siguiente$/i }).first().click()
+      await page.getByTestId('wizard-next-btn').click()
       await page.waitForTimeout(500)
 
       const backBtn = page.getByRole('button', { name: /back|previous/i }).first()
@@ -125,7 +126,7 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
 
   test('should handle rapid navigation', async ({ page }) => {
     for (let i = 0; i < 3; i++) {
-      const nextBtn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+      const nextBtn = page.getByTestId('wizard-next-btn')
       if (await nextBtn.isVisible()) {
         await nextBtn.click()
       }
@@ -142,7 +143,7 @@ test.describe('OpenClaw Installer - Complete Installation Flow', () => {
       expect(boundingBox?.height).toBeGreaterThan(0)
     }
 
-    const nextBtn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+    const nextBtn = page.getByTestId('wizard-next-btn')
     await expect(nextBtn).toBeVisible()
     expect(await nextBtn.isVisible()).toBe(true)
   })

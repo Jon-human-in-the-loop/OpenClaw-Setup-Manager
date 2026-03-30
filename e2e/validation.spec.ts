@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 
 // Helper to click Next only when enabled, waiting up to `ms` milliseconds
 async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 15000) {
-  const btn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+  const btn = page.getByTestId('wizard-next-btn')
   await btn.waitFor({ state: 'visible', timeout: ms })
   await expect(btn).toBeEnabled({ timeout: ms })
   await btn.click()
@@ -16,7 +16,7 @@ async function navigateToAgentNameStep(page: import('@playwright/test').Page) {
   await clickNextWhenEnabled(page) // Deployment → Security
   await clickNextWhenEnabled(page) // Security → SetupType
   // SetupType → AgentName (exact Next button to avoid matching card text)
-  const nextExact = page.getByRole('button', { name: /^next$|^siguiente$/i }).first()
+  const nextExact = page.getByTestId('wizard-next-btn')
   await expect(nextExact).toBeEnabled({ timeout: 8000 })
   await nextExact.click()
 }
@@ -30,16 +30,16 @@ async function navigateToChannelsStep(page: import('@playwright/test').Page) {
   await agentInput.waitFor({ state: 'visible', timeout: 5000 })
   await agentInput.fill('TestAgent')
   // AgentName → Model
-  const nextExact = page.getByRole('button', { name: /^next$|^siguiente$/i }).first()
+  const nextExact = page.getByTestId('wizard-next-btn')
   await expect(nextExact).toBeEnabled({ timeout: 5000 })
   await nextExact.click()
   await page.waitForTimeout(300)
   // Model → APIKey
-  const nextBtn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+  const nextBtn = page.getByTestId('wizard-next-btn')
   if (await nextBtn.isEnabled()) await nextBtn.click()
   await page.waitForTimeout(300)
   // APIKey → Channels
-  const nextBtn2 = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+  const nextBtn2 = page.getByTestId('wizard-next-btn')
   if (await nextBtn2.isEnabled()) await nextBtn2.click()
   await page.waitForTimeout(300)
 }
@@ -51,23 +51,23 @@ test.describe('OpenClaw Installer - Validation', () => {
     const agentInput = page.getByLabel(/agent name/i)
     await agentInput.waitFor({ state: 'visible', timeout: 5000 })
     await agentInput.fill('TestAgent')
-    const nextExact = page.getByRole('button', { name: /^next$|^siguiente$/i }).first()
+    const nextExact = page.getByTestId('wizard-next-btn')
     await expect(nextExact).toBeEnabled({ timeout: 5000 })
     await nextExact.click()
     await page.waitForTimeout(300)
     // Model step → click next
-    const nextBtn = page.getByRole('button', { name: /next|start_install|continue/i }).first()
+    const nextBtn = page.getByTestId('wizard-next-btn')
     if (await nextBtn.isEnabled()) await nextBtn.click()
     await page.waitForTimeout(300)
 
     const apiInput = page.getByLabel(/api key/i)
     if (await apiInput.isVisible()) {
       await apiInput.fill('invalid')
-      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeDisabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeDisabled()
 
       await apiInput.clear()
       await apiInput.fill('sk-1234567890abcdef')
-      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeEnabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeEnabled()
     }
   })
 
@@ -80,7 +80,7 @@ test.describe('OpenClaw Installer - Validation', () => {
       await expect(telegramInput).toHaveValue('')
 
       await telegramInput.fill('123456789:ABCdefGHIjklmnoPQRstuvWXYZabc')
-      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeEnabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeEnabled()
     }
   })
 
@@ -90,11 +90,11 @@ test.describe('OpenClaw Installer - Validation', () => {
     const phoneInput = page.getByLabel(/phone|whatsapp/i)
     if (await phoneInput.isVisible()) {
       await phoneInput.fill('abc')
-      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeDisabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeDisabled()
 
       await phoneInput.clear()
       await phoneInput.fill('+34912345678')
-      await expect(page.getByRole('button', { name: /next|start_install|continue/i }).first()).toBeEnabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeEnabled()
     }
   })
 

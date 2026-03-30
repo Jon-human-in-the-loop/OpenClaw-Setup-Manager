@@ -189,6 +189,7 @@ export function Welcome(): JSX.Element {
           }}
           whileTap={{ scale: 0.96 }}
           onClick={goNext}
+          data-testid="wizard-start-btn"
           className="no-drag flex items-center gap-2.5 px-9 py-3 font-bold font-mono rounded-lg text-[13px] transition-shadow"
           style={{
             background: "hsl(142 76% 55%)",

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MotionConfig } from "framer-motion";
 import { LanguageProvider } from "./context/LanguageContext";
 import { InstallationProvider, useInstallation } from "./context/InstallationContext";
 import { UpdateProvider } from "./context/UpdateContext";
@@ -127,7 +128,9 @@ export default function App(): JSX.Element {
         <UpdateProvider>
           <LanguageProvider>
             <InstallationProvider>
-              <AppContent />
+              <MotionConfig reducedMotion={process.env.NODE_ENV === "test" ? "user" : "never"}>
+                <AppContent />
+              </MotionConfig>
             </InstallationProvider>
           </LanguageProvider>
         </UpdateProvider>
