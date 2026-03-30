@@ -144,6 +144,16 @@ export function SystemCheck(): JSX.Element {
   const hasErrors = items.some((i) => i.status === "error");
   const canContinue = !checking && !hasErrors;
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "test") {
+      console.log(`[TEST-DEBUG] SystemCheck state: checking=${checking}, hasErrors=${hasErrors}, canContinue=${canContinue}`);
+      const errItems = items.filter(i => i.status === "error");
+      if (errItems.length > 0) {
+         console.log(`[TEST-DEBUG] Error items:`, errItems.map(i => i.id));
+      }
+    }
+  }, [checking, hasErrors, items]);
+
   const statusIcon = (status: CheckStatus) => {
     if (status === "ok") return <Check size={14} className="text-primary" strokeWidth={2.5} />;
     if (status === "warn") return <AlertTriangle size={14} className="text-yellow-500" />;

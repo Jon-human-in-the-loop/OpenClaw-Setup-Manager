@@ -16,8 +16,8 @@ const systemCheckMock = {
   diskSpaceGB: 50,
   diskSpaceMeetsRequirement: true,
   gitInstalled: true,
-  ollamaInstalled: false,
-  ollamaVersion: null,
+  ollamaInstalled: true,
+  ollamaVersion: '0.1.30',
   platform: 'linux',
   arch: 'x64',
   platformCapabilities: {
