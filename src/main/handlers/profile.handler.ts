@@ -46,6 +46,7 @@ export function registerProfileHandlers(): void {
   ipcMain.handle("profile:list", async (): Promise<ProfileResult> => {
     try {
       const db = getDb();
+      if (!db) return { success: true, message: "OK", profiles: [] };
       const profiles = db
         .prepare("SELECT id, username, created_at FROM users ORDER BY id ASC")
         .all() as UserProfile[];
@@ -69,6 +70,7 @@ export function registerProfileHandlers(): void {
 
     try {
       const db = getDb();
+      if (!db) return { success: false, message: "Database unavailable." };
       const salt = randomBytes(32);
       const pinHash = hashPin(pin, salt);
 
@@ -99,6 +101,7 @@ export function registerProfileHandlers(): void {
   ipcMain.handle("profile:login", async (_, username: string, pin: string): Promise<ProfileResult> => {
     try {
       const db = getDb();
+      if (!db) return { success: false, message: "Database unavailable." };
       const row = db
         .prepare("SELECT id, username, pin_hash, salt, created_at FROM users WHERE username = ?")
         .get(username) as { id: number; username: string; pin_hash: string; salt: string; created_at: string } | undefined;
@@ -125,6 +128,7 @@ export function registerProfileHandlers(): void {
   ipcMain.handle("profile:delete", async (_, username: string, pin: string): Promise<ProfileResult> => {
     try {
       const db = getDb();
+      if (!db) return { success: false, message: "Database unavailable." };
       const row = db
         .prepare("SELECT pin_hash, salt FROM users WHERE username = ?")
         .get(username) as { pin_hash: string; salt: string } | undefined;

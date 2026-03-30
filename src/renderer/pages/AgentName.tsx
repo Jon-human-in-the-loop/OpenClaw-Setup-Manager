@@ -46,7 +46,7 @@ export function AgentName(): JSX.Element {
         >
           {/* Name input */}
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1.5">
+            <label htmlFor="agent-name" className="block text-xs font-medium text-foreground mb-1.5">
               {t(language, "agentname.label")}
             </label>
             <div className="relative">
@@ -54,6 +54,7 @@ export function AgentName(): JSX.Element {
                 {selectedEmoji}
               </span>
               <input
+                id="agent-name"
                 type="text"
                 value={agentName}
                 onChange={(e) => setAgentName(e.target.value)}
@@ -141,6 +142,7 @@ export function AgentName(): JSX.Element {
         <button
           onClick={goNext}
           disabled={!canContinue}
+          data-testid="wizard-next-btn"
           className="no-drag flex items-center gap-1.5 px-5 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {t(language, "common.next")}

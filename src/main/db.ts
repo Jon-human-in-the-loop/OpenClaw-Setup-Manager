@@ -1,21 +1,29 @@
-import Database from "better-sqlite3";
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { mkdirSync } from "node:fs";
 
+// Graceful fallback if native module fails to load (e.g. in CI before rebuild)
+let Database: typeof import("better-sqlite3") | null = null;
+try {
+  Database = require("better-sqlite3");
+} catch (err) {
+  console.error("[db] better-sqlite3 unavailable — running without persistence:", err);
+}
+
 const DB_DIR = join(homedir(), ".openclaw");
 const DB_PATH = join(DB_DIR, "data.db");
 
-let db: Database.Database | null = null;
+let db: import("better-sqlite3").Database | null = null;
 
 /**
  * Gets (or creates) the singleton SQLite database connection.
- * Creates the ~/.openclaw directory and all required tables if they don't exist.
+ * Returns null if better-sqlite3 is unavailable.
  */
-export function getDb(): Database.Database {
+export function getDb(): import("better-sqlite3").Database | null {
+  if (!Database) return null;
   if (db) return db;
 
-  // Ensure the directory exists
   mkdirSync(DB_DIR, { recursive: true });
 
   db = new Database(DB_PATH);
@@ -78,6 +86,7 @@ export function getDb(): Database.Database {
  */
 export function getState(key: string): string | null {
   const db = getDb();
+  if (!db) return null;
   const row = db.prepare("SELECT value FROM app_state WHERE key = ?").get(key) as { value: string } | undefined;
   return row?.value ?? null;
 }
@@ -87,6 +96,7 @@ export function getState(key: string): string | null {
  */
 export function setState(key: string, value: string): void {
   const db = getDb();
+  if (!db) return;
   db.prepare(`
     INSERT INTO app_state (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
@@ -100,6 +110,7 @@ export function setState(key: string, value: string): void {
 export function logAction(action: string, detail?: string, result?: string): void {
   try {
     const db = getDb();
+    if (!db) return;
     db.prepare("INSERT INTO audit_log (action, detail, result) VALUES (?, ?, ?)").run(action, detail ?? null, result ?? null);
   } catch (err) {
     console.error("Failed to write to audit_log:", err);
@@ -111,6 +122,7 @@ export function logAction(action: string, detail?: string, result?: string): voi
  */
 export function getAuditLog(limit = 50): Array<{ id: number; action: string; detail: string | null; result: string | null; timestamp: string }> {
   const db = getDb();
+  if (!db) return [];
   return db.prepare("SELECT id, action, detail, result, timestamp FROM audit_log ORDER BY id DESC LIMIT ?").all(limit) as Array<{ id: number; action: string; detail: string | null; result: string | null; timestamp: string }>;
 }
 
@@ -120,6 +132,7 @@ export function getAuditLog(limit = 50): Array<{ id: number; action: string; det
 export function insertContainerLog(container: string, line: string, level: "INFO" | "WARN" | "ERROR"): void {
   try {
     const db = getDb();
+    if (!db) return;
     db.prepare("INSERT INTO container_logs (container, line, level) VALUES (?, ?, ?)").run(container, line, level);
   } catch (err) {
     console.error("Failed to write to container_logs:", err);
@@ -139,6 +152,7 @@ export interface ContainerLogEntry {
  */
 export function getContainerLogs(container: string, limit = 200): ContainerLogEntry[] {
   const db = getDb();
+  if (!db) return [];
   return db.prepare("SELECT * FROM (SELECT id, container, line, level, timestamp FROM container_logs WHERE container = ? ORDER BY id DESC LIMIT ?) ORDER BY id ASC").all(container, limit) as ContainerLogEntry[];
 }
 

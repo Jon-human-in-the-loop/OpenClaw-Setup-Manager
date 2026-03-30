@@ -143,8 +143,12 @@ export function Welcome(): JSX.Element {
             {language === "es" ? "// instala" : "// install"}
           </p>
           <h1 className="text-[2.8rem] font-black tracking-tight leading-none">
-            <span style={{ color: "#f4f4f5" }}>Open</span>
+            <span style={{ position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0 }}>
+              Install OpenClaw
+            </span>
+            <span aria-hidden="true" style={{ color: "#f4f4f5" }}>Open</span>
             <span
+              aria-hidden="true"
               style={{
                 color: "hsl(142 76% 55%)",
                 textShadow: "0 0 16px rgba(34,197,94,0.7), 0 0 32px rgba(34,197,94,0.35)",
@@ -185,6 +189,7 @@ export function Welcome(): JSX.Element {
           }}
           whileTap={{ scale: 0.96 }}
           onClick={goNext}
+          data-testid="wizard-start-btn"
           className="no-drag flex items-center gap-2.5 px-9 py-3 font-bold font-mono rounded-lg text-[13px] transition-shadow"
           style={{
             background: "hsl(142 76% 55%)",

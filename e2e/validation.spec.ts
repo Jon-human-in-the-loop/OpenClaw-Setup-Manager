@@ -1,101 +1,121 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
+
+// Helper to click Next only when enabled, waiting up to `ms` milliseconds
+async function clickNextWhenEnabled(page: import('@playwright/test').Page, ms = 15000) {
+  const btn = page.getByTestId('wizard-next-btn')
+  await btn.waitFor({ state: 'visible', timeout: ms })
+  await expect(btn).toBeEnabled({ timeout: ms })
+  await btn.click()
+}
+
+// Navigate wizard up to and including the Agent Name step
+// Welcome → SystemCheck → Deployment → Security → SetupType → AgentName
+async function navigateToAgentNameStep(page: import('@playwright/test').Page) {
+  await clickNextWhenEnabled(page) // Welcome → SystemCheck
+  await clickNextWhenEnabled(page) // SystemCheck → Deployment
+  await clickNextWhenEnabled(page) // Deployment → Security
+  await clickNextWhenEnabled(page) // Security → SetupType
+  // SetupType → AgentName (exact Next button to avoid matching card text)
+  const nextExact = page.getByTestId('wizard-next-btn')
+  await expect(nextExact).toBeEnabled({ timeout: 8000 })
+  await nextExact.click()
+}
+
+// Navigate wizard up to and past the Agent Name step through Model & API Key to Channels
+// Welcome → SystemCheck → SetupType → AgentName(fill) → Model → APIKey → Channels
+async function navigateToChannelsStep(page: import('@playwright/test').Page) {
+  await navigateToAgentNameStep(page)
+  // Fill in required Agent Name to unblock Next
+  const agentInput = page.getByLabel(/agent name/i)
+  await agentInput.waitFor({ state: 'visible', timeout: 5000 })
+  await agentInput.fill('TestAgent')
+  // AgentName → Model
+  const nextExact = page.getByTestId('wizard-next-btn')
+  await expect(nextExact).toBeEnabled({ timeout: 5000 })
+  await nextExact.click()
+  await page.waitForTimeout(300)
+  // Model → APIKey
+  const nextBtn = page.getByTestId('wizard-next-btn')
+  if (await nextBtn.isEnabled()) await nextBtn.click()
+  await page.waitForTimeout(300)
+  // APIKey → Channels
+  const nextBtn2 = page.getByTestId('wizard-next-btn')
+  if (await nextBtn2.isEnabled()) await nextBtn2.click()
+  await page.waitForTimeout(300)
+}
 
 test.describe('OpenClaw Installer - Validation', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173')
-    await page.waitForTimeout(1000)
-  })
-
   test('should validate API key format', async ({ page }) => {
-    // Navigate to API Key step
-    for (let i = 0; i < 5; i++) {
-      await page.getByRole('button', { name: /next/i }).first().click()
-      await page.waitForTimeout(300)
-    }
+    await navigateToAgentNameStep(page)
+    // Fill agent name to enable Next, then navigate forward to API Key step
+    const agentInput = page.getByLabel(/agent name/i)
+    await agentInput.waitFor({ state: 'visible', timeout: 5000 })
+    await agentInput.fill('TestAgent')
+    const nextExact = page.getByTestId('wizard-next-btn')
+    await expect(nextExact).toBeEnabled({ timeout: 5000 })
+    await nextExact.click()
+    await page.waitForTimeout(300)
+    // Model step → click next
+    const nextBtn = page.getByTestId('wizard-next-btn')
+    if (await nextBtn.isEnabled()) await nextBtn.click()
+    await page.waitForTimeout(300)
 
-    // Try invalid API key
     const apiInput = page.getByLabel(/api key/i)
     if (await apiInput.isVisible()) {
       await apiInput.fill('invalid')
-      await expect(page.getByRole('button', { name: /next/i }).first()).toBeDisabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeDisabled()
 
-      // Try valid format
       await apiInput.clear()
       await apiInput.fill('sk-1234567890abcdef')
-      await expect(page.getByRole('button', { name: /next/i }).first()).toBeEnabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeEnabled()
     }
   })
 
   test('should validate Telegram token', async ({ page }) => {
-    // Navigate to credentials step
-    for (let i = 0; i < 6; i++) {
-      await page.getByRole('button', { name: /next/i }).first().click()
-      await page.waitForTimeout(300)
-    }
+    await navigateToChannelsStep(page)
 
     const telegramInput = page.getByLabel(/telegram/i)
     if (await telegramInput.isVisible()) {
-      // Empty should be allowed (optional)
       await telegramInput.fill('')
       await expect(telegramInput).toHaveValue('')
 
-      // Valid token format
       await telegramInput.fill('123456789:ABCdefGHIjklmnoPQRstuvWXYZabc')
-      const nextBtn = page.getByRole('button', { name: /next/i }).first()
-      await expect(nextBtn).toBeEnabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeEnabled()
     }
   })
 
   test('should validate phone number format', async ({ page }) => {
-    // Navigate to credentials
-    for (let i = 0; i < 6; i++) {
-      await page.getByRole('button', { name: /next/i }).first().click()
-      await page.waitForTimeout(300)
-    }
+    await navigateToChannelsStep(page)
 
     const phoneInput = page.getByLabel(/phone|whatsapp/i)
     if (await phoneInput.isVisible()) {
-      // Invalid format
       await phoneInput.fill('abc')
-      await expect(page.getByRole('button', { name: /next/i }).first()).toBeDisabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeDisabled()
 
-      // Valid format
       await phoneInput.clear()
       await phoneInput.fill('+34912345678')
-      await expect(page.getByRole('button', { name: /next/i }).first()).toBeEnabled()
+      await expect(page.getByTestId('wizard-next-btn')).toBeEnabled()
     }
   })
 
   test('should handle whitespace in inputs', async ({ page }) => {
-    // Navigate to Agent Name step
-    for (let i = 0; i < 3; i++) {
-      await page.getByRole('button', { name: /next/i }).first().click()
-      await page.waitForTimeout(300)
-    }
+    await navigateToAgentNameStep(page)
 
     const agentInput = page.getByLabel(/agent name/i)
     if (await agentInput.isVisible()) {
-      // Input with surrounding whitespace should be trimmed
       await agentInput.fill('   TestAgent   ')
-      const value = await agentInput.inputValue()
-      expect(value.trim()).toBe('TestAgent')
+      expect((await agentInput.inputValue()).trim()).toBe('TestAgent')
     }
   })
 
   test('should show validation error messages', async ({ page }) => {
-    // Navigate to Agent Name
-    for (let i = 0; i < 3; i++) {
-      await page.getByRole('button', { name: /next/i }).first().click()
-      await page.waitForTimeout(300)
-    }
+    await navigateToAgentNameStep(page)
 
     const agentInput = page.getByLabel(/agent name/i)
     if (await agentInput.isVisible()) {
-      // Try empty name
       await agentInput.focus()
       await agentInput.blur()
 
-      // Check for error message (en o es)
       const errorMsg = page.locator('[role="alert"], .error, [class*="error"]')
       if (await errorMsg.first().isVisible()) {
         await expect(errorMsg.first()).toBeVisible()
@@ -104,19 +124,11 @@ test.describe('OpenClaw Installer - Validation', () => {
   })
 
   test('should validate channel selection', async ({ page }) => {
-    // Navigate to Channels step
-    for (let i = 0; i < 6; i++) {
-      await page.getByRole('button', { name: /next/i }).first().click()
-      await page.waitForTimeout(300)
-    }
+    await navigateToChannelsStep(page)
 
-    // Check for channel checkboxes
     const channelCheckboxes = page.getByRole('checkbox')
     if (await channelCheckboxes.first().isVisible()) {
-      const count = await channelCheckboxes.count()
-      expect(count).toBeGreaterThan(0)
-
-      // Toggle a channel
+      expect(await channelCheckboxes.count()).toBeGreaterThan(0)
       await channelCheckboxes.first().click()
       await expect(channelCheckboxes.first()).toBeChecked()
     }

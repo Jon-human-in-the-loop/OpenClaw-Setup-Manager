@@ -35,16 +35,17 @@ const PAGE_COMPONENTS = {
 export function Wizard(): JSX.Element {
   const { step } = useInstallation();
   const PageComponent = PAGE_COMPONENTS[step];
+  const isTest = typeof window !== "undefined" && window.localStorage.getItem('openclaw-is-test') === 'true';
 
   return (
     <div className="h-full overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={step}
-          initial={{ opacity: 0, x: 20 }}
+          initial={isTest ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          exit={isTest ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
+          transition={isTest ? { duration: 0 } : { duration: 0.2, ease: "easeInOut" }}
           className="h-full"
         >
           <PageComponent />
