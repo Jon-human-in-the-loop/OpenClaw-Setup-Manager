@@ -13,6 +13,7 @@ import { ConnectionStatus } from "./components/ConnectionStatus";
 import { ResumeModal } from "./components/ResumeModal";
 import { InstallationHistory } from "./components/InstallationHistory";
 import type { InstallationSession } from "../types";
+export const isTestEnv = () => typeof window !== "undefined" && window.localStorage.getItem('openclaw-is-test') === 'true';
 
 function AppContent(): JSX.Element {
   const [resumeSession, setResumeSession] = useState<InstallationSession | null>(null);
@@ -128,7 +129,7 @@ export default function App(): JSX.Element {
         <UpdateProvider>
           <LanguageProvider>
             <InstallationProvider>
-              <MotionConfig reducedMotion={process.env.NODE_ENV === "test" ? "user" : "never"}>
+              <MotionConfig reducedMotion={isTestEnv() ? "always" : "never"}>
                 <AppContent />
               </MotionConfig>
             </InstallationProvider>

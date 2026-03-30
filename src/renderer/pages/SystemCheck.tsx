@@ -145,7 +145,8 @@ export function SystemCheck(): JSX.Element {
   const canContinue = !checking && !hasErrors;
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "test") {
+    const isTest = typeof window !== "undefined" && window.localStorage.getItem('openclaw-is-test') === 'true';
+    if (isTest) {
       console.log(`[TEST-DEBUG] SystemCheck state: checking=${checking}, hasErrors=${hasErrors}, canContinue=${canContinue}`);
       const errItems = items.filter(i => i.status === "error");
       if (errItems.length > 0) {

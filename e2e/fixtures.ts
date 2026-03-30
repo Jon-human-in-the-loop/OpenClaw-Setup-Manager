@@ -57,6 +57,7 @@ export const test = base.extend<ElectronFixtures>({
     // Force English language for consistent testing BEFORE the app loads
     await context.addInitScript(() => {
       localStorage.setItem('openclaw-installer-lang', 'en');
+      localStorage.setItem('openclaw-is-test', 'true');
     });
 
     // Mock system:check and other APIs
