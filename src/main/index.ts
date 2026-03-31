@@ -73,7 +73,32 @@ app.whenReady().then(() => {
   });
 
   // Register all IPC handlers
-  registerSystemHandlers();
+  if (process.env.NODE_ENV === 'test' || process.env.SYSTEM_MOCK_TYPE) {
+    ipcMain.handle('system:check', async () => ({
+      nodeInstalled: true,
+      nodeVersion: 'v22.0.0',
+      nodeMeetsRequirement: true,
+      nodeMeetsRecommended: true,
+      portAvailable: true,
+      diskSpaceGB: 100,
+      diskSpaceMeetsRequirement: true,
+      gitInstalled: true,
+      ollamaInstalled: true,
+      ollamaVersion: '0.1.0',
+      platform: process.platform,
+      arch: process.arch,
+      platformCapabilities: {
+        os: process.platform,
+        arch: process.arch,
+        docker: { installed: true, running: true, isNative: true },
+        wsl2Available: false,
+        availableDeployments: ['local', 'docker'],
+        recommendedDeployment: 'docker',
+      },
+    }));
+  } else {
+    registerSystemHandlers();
+  }
   registerInstallHandlers();
   registerConfigHandlers();
   registerUpdateHandlers();

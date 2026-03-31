@@ -13,21 +13,18 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
-  webServer: {
-    command: 'pnpm dev',
-    port: 5173,
-    reuseExistingServer: false,
-    timeout: 120 * 1000,
-  },
+  // webServer is not needed for Electron E2E tests as we launch the app directly
+  // webServer: {
+  //   command: 'npm run dev',
+  //   port: 5173,
+  //   reuseExistingServer: false,
+  //   timeout: 120 * 1000,
+  // },
 
   projects: [
     {
-      name: 'chromium',
+      name: 'electron',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
     },
   ],
 })
