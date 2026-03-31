@@ -5,7 +5,7 @@ export const test = base.extend({
   electronApp: async ({}, use) => {
     const appPath = path.join(__dirname, '..')
     const electronApp = await electron.launch({
-      args: [appPath],
+      args: [appPath, '--no-sandbox', '--disable-setuid-sandbox'],
       env: {
         ...process.env,
         NODE_ENV: 'test',
