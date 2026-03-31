@@ -3,7 +3,7 @@ import path from 'path'
 
 export const test = base.extend({
   electronApp: async ({}, use) => {
-    const appPath = path.join(__dirname, '../out/main/index.js')
+    const appPath = path.join(__dirname, '..')
     const electronApp = await electron.launch({
       args: [appPath],
       env: {
