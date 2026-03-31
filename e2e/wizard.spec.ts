@@ -1,10 +1,8 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test.describe('OpenClaw Installer - Wizard Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to app
-    await page.goto('http://localhost:5173')
-    // Wait for app to load
+    // No es necesario navegar, el fixture ya abre la ventana
     await page.waitForTimeout(1000)
   })
 

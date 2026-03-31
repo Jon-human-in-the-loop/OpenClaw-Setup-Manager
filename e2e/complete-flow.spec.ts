@@ -1,8 +1,7 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test.describe('OpenClaw Installer - Complete Installation Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:5173')
     await page.waitForTimeout(1000)
   })
 
