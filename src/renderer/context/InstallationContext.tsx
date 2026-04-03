@@ -143,7 +143,7 @@ function getInitialState(): InstallationState {
     gatewayAuthEnabled: true,
 
     setupType: "cloud",
-    agentName: "Clawd",
+    agentName: "",
     agentEmoji: "🦞",
     primaryModel: "anthropic/claude-sonnet-4-5",
     fallbackModel: undefined,
@@ -175,7 +175,7 @@ function getInitialState(): InstallationState {
     stepIndex: savedState.stepIndex || 0,
     deploymentType: (savedState.deploymentType as DeploymentType) || "local",
     setupType: (savedState.setupType as SetupType) || "cloud",
-    agentName: savedState.agentName || "Clawd",
+    agentName: savedState.agentName || "",
     agentEmoji: savedState.agentEmoji || "🦞",
     primaryModel: savedState.primaryModel || "anthropic/claude-sonnet-4-5",
     fallbackModel: savedState.fallbackModel,
