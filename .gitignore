@@ -48,3 +48,7 @@ Thumbs.db
 # Cache
 .cache/
 .turbo/
+
+# Playwright test artifacts
+playwright-report/
+test-results/
